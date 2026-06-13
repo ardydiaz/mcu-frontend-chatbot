@@ -25,6 +25,31 @@ const conversations = [
 
 function Chatbot() {
   const [message, setMessage] = useState('')
+  const [chatMessages, setChatMessages] = useState(conversations)
+
+  function handleSendMessage(event) {
+    event.preventDefault()
+
+    const trimmedMessage = message.trim()
+
+    if (!trimmedMessage) {
+      return
+    }
+
+    setChatMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        author: 'Student',
+        role: 'user',
+        text: trimmedMessage,
+        time: new Date().toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit',
+        }),
+      },
+    ])
+    setMessage('')
+  }
 
   return (
     <main className="app-shell">
@@ -42,9 +67,10 @@ function Chatbot() {
         </header>
 
         <ChatBox
-          messages={conversations}
+          messages={chatMessages}
           message={message}
           onMessageChange={setMessage}
+          onSendMessage={handleSendMessage}
         />
       </section>
     </main>

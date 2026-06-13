@@ -1,15 +1,23 @@
+import { useEffect, useRef } from 'react'
 import MessageBubble from './MessageBubble'
 
-function ChatBox({ messages, message, onMessageChange }) {
+function ChatBox({ messages, message, onMessageChange, onSendMessage }) {
+  const bottomRef = useRef(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages])
+
   return (
     <div className="chat-card">
       <div className="chat-stream">
         {messages.map((messageItem) => (
           <MessageBubble message={messageItem} key={messageItem.text} />
         ))}
+        <div ref={bottomRef} aria-hidden="true"></div>
       </div>
 
-      <form className="composer" onSubmit={(event) => event.preventDefault()}>
+      <form className="composer" onSubmit={onSendMessage}>
         <label htmlFor="chat-message">Message</label>
         <textarea
           id="chat-message"
