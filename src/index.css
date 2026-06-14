@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --mcu-purple-950: #2a003f;
   --mcu-purple-850: #3b0a57;

@@ -3,6 +3,7 @@ import MessageBubble from './MessageBubble'
 
 function ChatBox({ messages, message, onMessageChange, onSendMessage }) {
   const bottomRef = useRef(null)
+  const hasMessage = message.trim().length > 0
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -26,10 +27,14 @@ function ChatBox({ messages, message, onMessageChange, onSendMessage }) {
           placeholder="Type a question like: What are today's registrar office hours?"
           rows="3"
         />
-        <div className="composer-actions">
-          <span>Secure student helpdesk preview</span>
-          <button type="submit">Send</button>
-        </div>
+        {hasMessage && (
+          <div className="composer-actions">
+            <span>Send message</span>
+            <button type="submit" aria-label="Send message">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+        )}
       </form>
     </div>
   )

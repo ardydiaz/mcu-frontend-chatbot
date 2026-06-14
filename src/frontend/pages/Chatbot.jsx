@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import ChatBox from '../components/ChatBox'
-import Sidebar from '../components/Sidebar'
 
 const conversations = [
   {
@@ -26,6 +25,7 @@ const conversations = [
 function Chatbot() {
   const [message, setMessage] = useState('')
   const [chatMessages, setChatMessages] = useState(conversations)
+  const [isChatOpen, setIsChatOpen] = useState(true)
 
   function handleSendMessage(event) {
     event.preventDefault()
@@ -52,17 +52,25 @@ function Chatbot() {
   }
 
   return (
-    <main className="app-shell">
-      <Sidebar />
-
-      <section className="chat-workspace" aria-label="University chatbot">
-        <header className="chat-header">
-          <div>
-            <p className="eyebrow">Student Support Assistant</p>
-            <h2>Ask about school services, forms, and schedules</h2>
+    <main className="chatbot-widget-page">
+      <section className={`chatbot-popup ${isChatOpen ? 'open' : ''}`} aria-label="University chatbot">
+        <header className="chatbot-popup-header">
+          <div className="chatbot-title">
+            <div className="bot-icon" aria-hidden="true">
+              <span></span>
+            </div>
+            <div>
+              <strong>Chatbot</strong>
+              <small>MCU Student Support</small>
+            </div>
           </div>
-          <button className="new-chat" type="button">
-            New Chat
+          <button
+            className="popup-collapse"
+            type="button"
+            aria-label="Hide chatbot"
+            onClick={() => setIsChatOpen(false)}
+          >
+            <span></span>
           </button>
         </header>
 
@@ -73,6 +81,16 @@ function Chatbot() {
           onSendMessage={handleSendMessage}
         />
       </section>
+
+      <button
+        className={`chatbot-toggle ${isChatOpen ? 'is-open' : ''}`}
+        type="button"
+        aria-label={isChatOpen ? 'Hide chatbot' : 'Open chatbot'}
+        aria-expanded={isChatOpen}
+        onClick={() => setIsChatOpen((current) => !current)}
+      >
+        <span></span>
+      </button>
     </main>
   )
 }

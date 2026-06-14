@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import AdminDashboard from './pages/AdminDashboard'
-import Chatbot from './pages/Chatbot'
-import Login from './pages/Login'
+import AdminDashboard from './admin/pages/AdminDashboard'
+import Login from './admin/pages/Login'
+import Chatbot from './frontend/pages/Chatbot'
 import './App.css'
 
 function ProtectedAdmin() {
