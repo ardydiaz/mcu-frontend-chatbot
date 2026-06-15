@@ -58,20 +58,20 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
   }
 
   return (
-    <article className={`rounded-lg border border-[#ffc52f]/20 bg-white/10 p-5 text-white shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur ${compact ? 'xl:row-span-2' : 'xl:col-span-full'}`}>
+    <article className={`rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)] ${compact ? 'xl:row-span-2' : 'xl:col-span-full'}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#ffc52f]">Knowledge Base</p>
-          <h3 className="m-0 text-xl font-bold text-white">{compact ? 'Recent Documents' : 'Document Management'}</h3>
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Knowledge Base</p>
+          <h3 className="m-0 text-xl font-bold text-[#3b0a57]">{compact ? 'Recent Documents' : 'Document Management'}</h3>
         </div>
         <div className="flex gap-2">
           {compact && (
-            <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f]" type="button" onClick={onViewAll}>
+            <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]" type="button" onClick={onViewAll}>
               View All
             </button>
           )}
           {!compact && (
-            <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f]" type="button" onClick={onUpload}>
+            <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]" type="button" onClick={onUpload}>
               Upload Document
             </button>
           )}
@@ -105,7 +105,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
 
       <BootstrapDataTable
         columns={[
-          { key: 'id', label: 'ID', className: 'fw-semibold' },
+          { key: 'id', label: 'ID', className: 'fw-semibold text-[#5c297c]' },
           { key: 'title', label: 'Document', className: 'fw-bold' },
           { key: 'type', label: 'Type', render: (document) => <TypeBadge value={document.type} /> },
           { key: 'owner', label: 'Owner' },

@@ -8,6 +8,12 @@ function MessageBubble({ message }) {
           <span>{message.time}</span>
         </div>
         <p>{message.text}</p>
+        {message.source && (
+          <div className="message-source">
+            <span>Source</span>
+            <strong>{message.source}</strong>
+          </div>
+        )}
       </div>
     </article>
   )
