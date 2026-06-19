@@ -1,4 +1,4 @@
-import apiFetch from '../../services/apiClient'
+import apiFetch, { API_BASE_URL, clearStoredSession, getStoredToken } from '../../services/apiClient'
 
 export const PAGE_SIZE = 5
 
@@ -28,6 +28,7 @@ function mapDocument(document) {
     type: getFileType(document.file_path),
     date: formatDate(document.created_at),
     imageCount: Number(document.image_count || 0),
+    rawId: document.id,
     raw: document,
   }
 }
@@ -54,18 +55,70 @@ async function fetchDocumentsFromApi({ page, pageSize, search, status }) {
   }
 }
 
-async function uploadDocument({ title, file }) {
+async function uploadDocument({ title, file, onProgress, onUploadComplete }) {
   const formData = new FormData()
-  formData.append('pdf', file)
+  formData.append('file', file)
 
   if (title.trim()) {
     formData.append('title', title.trim())
   }
 
-  return apiFetch('/api/documents/upload', {
-    method: 'POST',
-    body: formData,
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
+
+    request.open('POST', new URL('/api/documents/upload', API_BASE_URL).toString())
+
+    const token = getStoredToken()
+
+    if (token) {
+      request.setRequestHeader('Authorization', `Bearer ${token}`)
+    }
+
+    request.upload.onprogress = (event) => {
+      if (!event.lengthComputable) {
+        return
+      }
+
+      onProgress?.(Math.min(Math.round((event.loaded / event.total) * 90), 90))
+    }
+
+    request.upload.onload = () => {
+      onProgress?.(90)
+      onUploadComplete?.()
+    }
+
+    request.onload = () => {
+      const contentType = request.getResponseHeader('content-type') || ''
+      const data = contentType.includes('application/json') && request.responseText
+        ? JSON.parse(request.responseText)
+        : { message: request.responseText }
+
+      if (request.status >= 200 && request.status < 300) {
+        onProgress?.(100)
+        resolve(data)
+        return
+      }
+
+      if (request.status === 401) {
+        clearStoredSession()
+      }
+
+      reject(new Error(data.message || 'Upload failed.'))
+    }
+
+    request.onerror = () => {
+      reject(new Error('Upload failed. Please check your connection.'))
+    }
+
+    request.send(formData)
   })
 }
 
-export { fetchDocumentsFromApi, uploadDocument }
+async function fetchDocumentDetails(documentId) {
+  const id = String(documentId).replace(/^DOC-/, '')
+  const data = await apiFetch(`/api/documents/${id}`)
+
+  return data.document
+}
+
+export { fetchDocumentDetails, fetchDocumentsFromApi, uploadDocument }

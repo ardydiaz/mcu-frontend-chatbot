@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { documents } from '../data/mockAdminData'
-import { fetchDocumentsFromApi, PAGE_SIZE } from '../services/documentService'
+import { API_BASE_URL } from '../../services/apiClient'
+import { fetchDocumentDetails, fetchDocumentsFromApi, PAGE_SIZE } from '../services/documentService'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge, TypeBadge } from '../components/Badges'
 
-function DocumentsPage({ compact = false, onViewAll, onUpload }) {
+function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 }) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const queryKey = `${page}|${search}|${status}`
   const [serverData, setServerData] = useState({ rows: [], total: 0, queryKey: '' })
   const [error, setError] = useState('')
+  const [selectedDocument, setSelectedDocument] = useState(null)
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState('')
   const isLoading = !compact && serverData.queryKey !== queryKey
   const totalPages = Math.max(1, Math.ceil(serverData.total / PAGE_SIZE))
   const visibleRows = compact ? documents.slice(0, 3) : serverData.rows
@@ -54,7 +58,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
     return () => {
       isCurrentRequest = false
     }
-  }, [compact, page, queryKey, search, status])
+  }, [compact, page, queryKey, refreshKey, search, status])
 
   function handleSearchChange(event) {
     setSearch(event.target.value)
@@ -64,6 +68,30 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
   function handleStatusChange(event) {
     setStatus(event.target.value)
     setPage(1)
+  }
+
+  async function handleViewDocument(document) {
+    setSelectedDocument(null)
+    setDetailsError('')
+    setIsDetailsLoading(true)
+
+    try {
+      setSelectedDocument(await fetchDocumentDetails(document.rawId || document.id))
+    } catch (requestError) {
+      setDetailsError(requestError.message || 'Unable to load document details.')
+    } finally {
+      setIsDetailsLoading(false)
+    }
+  }
+
+  function closeDetailsModal() {
+    setSelectedDocument(null)
+    setDetailsError('')
+    setIsDetailsLoading(false)
+  }
+
+  function getFileUrl(url) {
+    return url ? new URL(url, API_BASE_URL).toString() : ''
   }
 
   return (
@@ -125,8 +153,8 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
             label: 'Action',
             headerClassName: 'text-end',
             className: 'text-end',
-            render: () => (
-              <button className="btn btn-sm btn-outline-warning" type="button">
+            render: (document) => (
+              <button className="btn btn-sm btn-outline-warning" type="button" onClick={() => handleViewDocument(document)}>
                 View
               </button>
             ),
@@ -160,6 +188,79 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
               </li>
             </ul>
           </nav>
+        </div>
+      )}
+
+      {(isDetailsLoading || selectedDocument || detailsError) && (
+        <div className="document-modal-backdrop" role="presentation" onMouseDown={closeDetailsModal}>
+          <section
+            className="document-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Document details"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="document-modal-head">
+              <div>
+                <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Document Preview</p>
+                <h3>{selectedDocument?.title || 'Loading document'}</h3>
+              </div>
+              <button type="button" onClick={closeDetailsModal}>Close</button>
+            </header>
+
+            {isDetailsLoading && <p className="form-note">Loading document details...</p>}
+            {detailsError && <p className="form-error">{detailsError}</p>}
+
+            {selectedDocument && (
+              <div className="document-detail-grid">
+                <aside className="document-detail-summary">
+                  <div>
+                    <span>Uploaded By</span>
+                    <strong>{selectedDocument.uploadedBy}</strong>
+                  </div>
+                  <div>
+                    <span>Pages / Sections</span>
+                    <strong>{selectedDocument.textPages?.length || 0}</strong>
+                  </div>
+                  <div>
+                    <span>Images</span>
+                    <strong>{selectedDocument.imageCount}</strong>
+                  </div>
+                  <a href={getFileUrl(selectedDocument.fileUrl)} target="_blank" rel="noreferrer">
+                    Open Original File
+                  </a>
+                </aside>
+
+                <div className="document-detail-content">
+                  <section>
+                    <h4>Extracted Text</h4>
+                    <div className="document-text-pages">
+                      {selectedDocument.textPages?.map((page) => (
+                        <article key={page.pageNumber}>
+                          <span>Page {page.pageNumber}</span>
+                          <p>{page.content || 'No text extracted for this page.'}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+
+                  {selectedDocument.images?.length > 0 && (
+                    <section>
+                      <h4>Extracted Images</h4>
+                      <div className="document-image-grid">
+                        {selectedDocument.images.slice(0, 8).map((image) => (
+                          <a href={getFileUrl(image.url)} target="_blank" rel="noreferrer" key={image.id}>
+                            <img src={getFileUrl(image.url)} alt={`Page ${image.pageNumber}`} />
+                            <span>Page {image.pageNumber}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
         </div>
       )}
     </article>

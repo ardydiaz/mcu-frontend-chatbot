@@ -17,9 +17,9 @@
   --line: rgba(42, 0, 63, 0.12);
   --shadow: 0 24px 80px rgba(42, 0, 63, 0.18);
   --font-sans:
-    'Montserrat', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
-  --font-serif: 'Baskerville', 'Times New Roman', Georgia, serif;
+    Inter, 'Segoe UI Variable', 'Segoe UI', Roboto, Helvetica, Arial, ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: var(--font-sans);
 
   font-family: var(--font-sans);
   color: var(--ink);
@@ -38,6 +38,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
   background: #fffaf7;
 }
 

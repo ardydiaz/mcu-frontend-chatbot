@@ -35,6 +35,72 @@
   min-width: 0;
 }
 
+.nexus-admin-shell,
+.login-shell,
+.upload-console,
+.bootstrap-datatable {
+  font-family: var(--font-sans);
+  font-weight: 450;
+  letter-spacing: 0;
+}
+
+.nexus-admin-shell h1,
+.nexus-admin-shell h2,
+.nexus-admin-shell h3,
+.login-card h1,
+.upload-console h3 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.nexus-admin-shell .eyebrow,
+.nexus-admin-shell [class*='uppercase'],
+.login-card .eyebrow,
+.upload-console .eyebrow {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.nexus-admin-shell button,
+.login-card button,
+.upload-console button,
+.bootstrap-datatable .btn {
+  font-weight: 650;
+}
+
+.nexus-sidebar h1,
+.nexus-topbar strong,
+.profile-dropdown strong {
+  font-weight: 700;
+}
+
+.nexus-sidebar nav button,
+.nexus-sidebar nav p {
+  font-weight: 600;
+}
+
+.bootstrap-datatable thead th,
+.bootstrap-datatable td,
+.datatable-toolbar label,
+.upload-field,
+.upload-file-summary strong,
+.upload-progress-panel strong {
+  font-weight: 650;
+}
+
+.bootstrap-datatable thead th {
+  letter-spacing: 0.04em;
+}
+
+.status,
+.document-status,
+.upload-format-pill,
+.server-badge {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -123,6 +189,7 @@ h1 {
   font-family: var(--font-serif);
   max-width: 12ch;
   color: var(--surface-strong);
+  font-weight: 750;
   font-size: clamp(2rem, 5vw, 3.5rem);
   line-height: 0.98;
 }
@@ -131,6 +198,7 @@ h2 {
   font-family: var(--font-serif);
   max-width: 20ch;
   color: var(--ink);
+  font-weight: 740;
   font-size: clamp(1.8rem, 3vw, 3.3rem);
   line-height: 1;
 }
@@ -140,6 +208,8 @@ h4,
 h5,
 h6 {
   font-family: var(--font-serif);
+  font-weight: 720;
+  letter-spacing: 0;
 }
 
 .panel {
@@ -1962,28 +2032,461 @@ button.avatar-profile:hover {
   font-weight: 900;
 }
 
-.upload-dropzone {
+.upload-console {
+  border: 1px solid rgba(92, 41, 124, 0.12);
+  border-radius: 8px;
+  padding: 22px;
+  color: #241433;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 247, 0.92), #fff),
+    #fff;
+  box-shadow: 0 18px 50px rgba(42, 0, 63, 0.08);
+}
+
+.upload-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
   display: grid;
   place-items: center;
-  gap: 12px;
-  margin-top: 18px;
-  min-height: 260px;
-  border: 2px dashed rgba(92, 41, 124, 0.18);
+  padding: 22px;
+  background: rgba(42, 0, 63, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.upload-modal-panel {
+  width: min(1040px, calc(100vw - 44px));
+  max-height: min(820px, calc(100svh - 44px));
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 30px 90px rgba(20, 0, 32, 0.34);
+}
+
+.upload-console-modal {
+  min-height: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.upload-console-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.upload-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-console-head h3 {
+  margin: 0;
+  color: #3b0a57;
+  font-size: 1.35rem;
+}
+
+.upload-format-pill {
+  border: 1px solid rgba(92, 41, 124, 0.12);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--mcu-purple-850);
+  font-size: 0.8rem;
+  font-weight: 900;
+  background: rgba(255, 197, 47, 0.24);
+}
+
+.upload-modal-close {
+  border: 1px solid rgba(92, 41, 124, 0.14);
   border-radius: 8px;
-  padding: 28px;
+  padding: 8px 12px;
+  color: var(--mcu-purple-850);
+  font-size: 0.82rem;
+  font-weight: 900;
+  background: #fff;
+}
+
+.upload-modal-close:hover {
+  background: #faf6ff;
+}
+
+.document-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 82;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(42, 0, 63, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.document-modal-panel {
+  width: min(1120px, calc(100vw - 44px));
+  max-height: min(860px, calc(100svh - 44px));
+  overflow: auto;
+  border: 1px solid rgba(92, 41, 124, 0.12);
+  border-radius: 12px;
+  padding: 22px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 30px 90px rgba(20, 0, 32, 0.34);
+}
+
+.document-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.document-modal-head h3 {
+  margin: 0;
+  color: var(--mcu-purple-850);
+  font-size: 1.35rem;
+}
+
+.document-modal-head button {
+  border: 1px solid rgba(92, 41, 124, 0.14);
+  border-radius: 8px;
+  padding: 9px 13px;
+  color: var(--mcu-purple-850);
+  font-weight: 650;
+  background: #fff;
+}
+
+.document-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.32fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.document-detail-summary {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.document-detail-summary div,
+.document-detail-summary a {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(92, 41, 124, 0.1);
+  border-radius: 8px;
+  padding: 13px;
+  background: #faf6ff;
+}
+
+.document-detail-summary span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.document-detail-summary strong {
+  color: var(--mcu-purple-850);
+  font-weight: 700;
+}
+
+.document-detail-summary a {
+  color: var(--mcu-purple-950);
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--mcu-gold);
+}
+
+.document-detail-content {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.document-detail-content h4 {
+  margin: 0 0 10px;
+  color: var(--mcu-purple-850);
+  font-size: 1rem;
+}
+
+.document-text-pages {
+  display: grid;
+  gap: 12px;
+}
+
+.document-text-pages article {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(92, 41, 124, 0.1);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fffaf7;
+}
+
+.document-text-pages span {
+  color: var(--mcu-purple-700);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.document-text-pages p {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.58;
+}
+
+.document-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.document-image-grid a {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(92, 41, 124, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--mcu-purple-850);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+  background: #fff;
+}
+
+.document-image-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #faf6ff;
+}
+
+.upload-workflow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.upload-console-modal .upload-workflow {
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+}
+
+.upload-console-modal .upload-dropzone {
+  min-height: 320px;
+}
+
+.upload-dropzone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 360px;
+  border: 2px dashed rgba(92, 41, 124, 0.2);
+  border-radius: 8px;
+  padding: 30px;
   text-align: center;
+  cursor: pointer;
   background:
-    radial-gradient(circle at 50% 20%, rgba(255, 183, 54, 0.16), transparent 12rem),
-    #fffaf7;
+    radial-gradient(circle at 50% 28%, rgba(255, 197, 47, 0.18), transparent 13rem),
+    linear-gradient(180deg, #fff, #fffaf7);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.is-dragging {
+  border-color: var(--mcu-gold);
+  box-shadow: 0 18px 42px rgba(255, 197, 47, 0.18);
+  transform: translateY(-1px);
+}
+
+.upload-dropzone.has-file {
+  border-color: rgba(34, 184, 200, 0.5);
+  background:
+    radial-gradient(circle at 50% 28%, rgba(34, 184, 200, 0.12), transparent 13rem),
+    linear-gradient(180deg, #fff, #f7fdff);
+}
+
+.upload-dropzone input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-icon {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 88px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 1000;
+  background: linear-gradient(160deg, var(--mcu-purple-850), var(--mcu-pink));
+  box-shadow: 0 18px 34px rgba(92, 41, 124, 0.18);
 }
 
 .upload-dropzone strong {
+  max-width: min(100%, 520px);
   color: var(--mcu-purple-850);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
+  overflow-wrap: anywhere;
 }
 
-.upload-dropzone span {
+.upload-dropzone small {
   color: var(--muted);
+  font-weight: 800;
+}
+
+.upload-browse {
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--mcu-purple-950);
+  font-weight: 900;
+  background: var(--mcu-gold);
+}
+
+.upload-details-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  border: 1px solid rgba(92, 41, 124, 0.12);
+  border-radius: 8px;
+  padding: 18px;
+  background: #fff;
+}
+
+.upload-field {
+  display: grid;
+  gap: 8px;
+  color: var(--mcu-purple-850);
+  font-weight: 900;
+}
+
+.upload-field input {
+  width: 100%;
+  border: 1px solid rgba(92, 41, 124, 0.14);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.upload-field input:focus {
+  border-color: var(--mcu-purple-700);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(100, 41, 138, 0.1);
+}
+
+.upload-file-summary {
+  display: grid;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 14px;
+  background: #faf6ff;
+}
+
+.upload-file-summary span,
+.upload-file-summary small {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.upload-file-summary strong {
+  color: var(--mcu-purple-850);
+  overflow-wrap: anywhere;
+}
+
+.upload-progress-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(92, 41, 124, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fffaf7;
+}
+
+.upload-progress-panel > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.upload-progress-panel span,
+.upload-progress-panel small {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.upload-progress-panel strong {
+  color: var(--mcu-purple-850);
+  font-weight: 1000;
+}
+
+.upload-progress-panel progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #f4ecff;
+}
+
+.upload-progress-panel progress::-webkit-progress-bar {
+  background: #f4ecff;
+}
+
+.upload-progress-panel progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mcu-gold), var(--mcu-cyan));
+}
+
+.upload-progress-panel progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mcu-gold), var(--mcu-cyan));
+}
+
+.upload-progress-panel.is-processing progress::-webkit-progress-value {
+  background:
+    linear-gradient(90deg, var(--mcu-gold), var(--mcu-cyan)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.2) 0 8px,
+      rgba(255, 255, 255, 0) 8px 16px
+    );
+}
+
+.upload-progress-panel.is-processing strong {
+  color: var(--mcu-cyan);
+}
+
+.upload-submit {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 13px 16px;
+  color: var(--mcu-purple-950);
+  font-weight: 1000;
+  background: var(--mcu-gold);
+}
+
+.upload-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .export-options button:nth-child(1) {
@@ -2249,10 +2752,43 @@ button.avatar-profile:hover {
 
   .mock-toolbar,
   .datatable-toolbar,
+  .upload-workflow,
+  .upload-console-modal .upload-workflow,
   .user-grid,
   .settings-grid,
   .export-options {
     grid-template-columns: 1fr;
+  }
+
+  .upload-modal-backdrop {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .document-modal-backdrop {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .upload-modal-panel {
+    width: 100%;
+    max-height: calc(100svh - 24px);
+  }
+
+  .document-modal-panel {
+    width: 100%;
+    max-height: calc(100svh - 24px);
+  }
+
+  .document-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-console-head,
+  .upload-head-actions,
+  .document-modal-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .datatable-footer {

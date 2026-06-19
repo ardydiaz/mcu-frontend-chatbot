@@ -12,6 +12,8 @@ function AdminDashboard() {
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState('documents')
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [documentRefreshKey, setDocumentRefreshKey] = useState(0)
 
   function handleLogout() {
     logout()
@@ -30,11 +32,33 @@ function AdminDashboard() {
         />
 
         <div className="p-4 sm:p-6">
-          {activeView === 'documents' && <DocumentsPage onUpload={() => setActiveView('upload')} />}
+          {activeView === 'documents' && (
+            <DocumentsPage
+              onUpload={() => setIsUploadModalOpen(true)}
+              refreshKey={documentRefreshKey}
+            />
+          )}
           {activeView === 'chatLogs' && <ChatLogsPage />}
           {activeView === 'users' && <UsersPage />}
-          {activeView === 'upload' && <UploadDocumentPage />}
         </div>
+
+        {isUploadModalOpen && (
+          <div className="upload-modal-backdrop" role="presentation" onMouseDown={() => setIsUploadModalOpen(false)}>
+            <div
+              className="upload-modal-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Upload document"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <UploadDocumentPage
+                isModal
+                onClose={() => setIsUploadModalOpen(false)}
+                onUploaded={() => setDocumentRefreshKey((current) => current + 1)}
+              />
+            </div>
+          </div>
+        )}
       </section>
     </main>
   )
