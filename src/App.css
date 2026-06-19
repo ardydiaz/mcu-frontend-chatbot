@@ -1777,12 +1777,14 @@ button.avatar-profile:hover {
 }
 
 .document-status.resolved,
-.document-status.active {
+.document-status.active,
+.document-status.approved {
   color: #07515a;
   background: rgba(34, 184, 200, 0.22);
 }
 
-.document-status.flagged {
+.document-status.flagged,
+.document-status.rejected {
   color: var(--surface-strong);
   background: linear-gradient(135deg, var(--mcu-pink), var(--mcu-red));
 }

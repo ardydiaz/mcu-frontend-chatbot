@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ChatBox from '../components/ChatBox'
+import { askChatbot } from '../services/chatService'
 
 const quickActions = [
   'How do I request my TOR?',
@@ -112,7 +113,7 @@ function getCurrentTime() {
   })
 }
 
-function getAssistantReply(question) {
+function getLocalAssistantReply(question) {
   const normalized = question.toLowerCase()
   const match = responseRules.find((rule) => rule.keywords.some((keyword) => normalized.includes(keyword)))
 
@@ -175,7 +176,32 @@ function Chatbot() {
     }
   }
 
-  function submitQuestion(question) {
+  function buildApiAssistantReply(data) {
+    const sourceText = data.sources?.length
+      ? data.sources.map((source) => `${source.title}, page ${source.pageNumber}`).join('; ')
+      : 'MCU Knowledge Base'
+
+    return {
+      author: 'MCU Guide',
+      role: 'assistant',
+      text: data.answer || 'I found a response, but it did not include answer text.',
+      time: getCurrentTime(),
+      source: sourceText,
+    }
+  }
+
+  function buildErrorReply(errorMessage, question) {
+    const fallbackReply = getLocalAssistantReply(question)
+
+    return {
+      ...fallbackReply,
+      text: `${errorMessage} ${fallbackReply.text}`,
+      time: getCurrentTime(),
+      source: fallbackReply.source,
+    }
+  }
+
+  async function submitQuestion(question) {
     const trimmedQuestion = question.trim()
 
     if (!trimmedQuestion || !activeThread) {
@@ -191,8 +217,6 @@ function Chatbot() {
       time: getCurrentTime(),
     }
 
-    const assistantReply = getAssistantReply(trimmedQuestion)
-
     updateThread(activeThread.id, (thread) => ({
       ...thread,
       updatedAt: 'Just now',
@@ -203,13 +227,27 @@ function Chatbot() {
     setMessage('')
     setIsTyping(true)
 
-    typingTimerRef.current = window.setTimeout(() => {
+    try {
+      const data = await askChatbot(trimmedQuestion)
+      const assistantReply = buildApiAssistantReply(data)
+
       updateThread(activeThread.id, (thread) => ({
         ...thread,
         messages: [...thread.messages, assistantReply],
       }))
+    } catch (requestError) {
+      const assistantReply = buildErrorReply(
+        requestError.message || 'I could not reach the MCU API right now.',
+        trimmedQuestion,
+      )
+
+      updateThread(activeThread.id, (thread) => ({
+        ...thread,
+        messages: [...thread.messages, assistantReply],
+      }))
+    } finally {
       setIsTyping(false)
-    }, 900)
+    }
   }
 
   function handleSendMessage(event) {

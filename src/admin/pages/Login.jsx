@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PublicClientApplication } from '@azure/msal-browser'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-
-const DEFAULT_ADMIN = {
-  username: 'admin',
-  password: 'admin123',
-}
+import { loginWithCredentials } from '../../services/authService'
+import { setStoredSession } from '../../services/apiClient'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const MICROSOFT_AUTH_PATH = import.meta.env.VITE_MICROSOFT_AUTH_PATH || '/api/auth/microsoft'
@@ -20,7 +17,7 @@ function getMicrosoftAuthUrl() {
 function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [authMessage, setAuthMessage] = useState('')
@@ -66,9 +63,6 @@ function Login() {
         if (!active || !result?.idToken) {
           return
         }
-        console.log('Microsoft redirect result:', result)
-        console.log('Microsoft idToken:', result.idToken)
-
         setAuthMessage('Signing you in with Microsoft 365...')
 
         const response = await fetch(getMicrosoftAuthUrl(), {
@@ -87,11 +81,10 @@ function Login() {
           throw new Error(data.message || 'Microsoft sign-in failed.')
         }
 
-        localStorage.setItem('mcuAdminLoggedIn', 'true')
-
-        if (data.token || data.accessToken) {
-          localStorage.setItem('mcuAdminToken', data.token || data.accessToken)
-        }
+        setStoredSession({
+          token: data.token || data.accessToken,
+          user: data.user,
+        })
 
         navigate('/admin', { replace: true })
       } catch (msalError) {
@@ -113,32 +106,30 @@ function Login() {
 
   useEffect(() => {
     const token = searchParams.get('token') || searchParams.get('accessToken')
-    const microsoftSuccess = searchParams.get('microsoft') === 'success' || searchParams.get('auth') === 'success'
 
-    if (token || microsoftSuccess) {
-      localStorage.setItem('mcuAdminLoggedIn', 'true')
-
-      if (token) {
-        localStorage.setItem('mcuAdminToken', token)
-      }
-
+    if (token) {
+      setStoredSession({ token })
       navigate('/admin', { replace: true })
     }
   }, [navigate, searchParams])
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
+    setError('')
+    setAuthMessage('')
+    setIsSigningIn(true)
 
-    const isDefaultAdmin =
-      username.trim() === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password
-
-    if (!isDefaultAdmin) {
-      setError('Invalid admin username or password.')
-      return
+    try {
+      await loginWithCredentials({
+        email: email.trim(),
+        password,
+      })
+      navigate('/admin')
+    } catch (loginError) {
+      setError(loginError.message || 'Invalid email or password.')
+    } finally {
+      setIsSigningIn(false)
     }
-
-    localStorage.setItem('mcuAdminLoggedIn', 'true')
-    navigate('/admin')
   }
 
   function handleMicrosoftSignIn() {
@@ -183,13 +174,12 @@ function Login() {
 
         <form className="stack-form" onSubmit={handleSubmit}>
           <label>
-            Username
+            Email
             <input
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="admin"
-              autoComplete="username"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="username" placeholder="Email @mcu.edu.ph"
             />
           </label>
           <label>
@@ -198,15 +188,16 @@ function Login() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="admin123"
-              autoComplete="current-password"
+              autoComplete="current-password" placeholder="Password"
             />
           </label>
 
           {error && <p className="form-error">{error}</p>}
           {authMessage && <p className="form-note">{authMessage}</p>}
 
-          <button type="submit">Sign In</button>
+          <button type="submit" disabled={isSigningIn}>
+            {isSigningIn ? 'Signing in...' : 'Sign In'}
+          </button>
         </form>
 
         <div className="login-divider">
@@ -227,10 +218,6 @@ function Login() {
               : 'Sign in with Microsoft 365'}
         </button>
 
-        <div className="default-login-note">
-          <span>Default admin</span>
-          <strong>admin / admin123</strong>
-        </div>
       </section>
     </main>
   )

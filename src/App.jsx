@@ -2,12 +2,11 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import AdminDashboard from './admin/pages/AdminDashboard'
 import Login from './admin/pages/Login'
 import Chatbot from './frontend/pages/Chatbot'
+import { isLoggedIn } from './services/apiClient'
 import './App.css'
 
 function ProtectedAdmin() {
-  const isAdminLoggedIn = localStorage.getItem('mcuAdminLoggedIn') === 'true'
-
-  if (!isAdminLoggedIn) {
+  if (!isLoggedIn()) {
     return <Navigate to="/login" replace />
   }
 

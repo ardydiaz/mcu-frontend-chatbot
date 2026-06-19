@@ -6,6 +6,7 @@ import ChatLogsPage from './ChatLogsPage'
 import DocumentsPage from './DocumentsPage'
 import UploadDocumentPage from './UploadDocumentPage'
 import UsersPage from './UsersPage'
+import { logout } from '../../services/authService'
 
 function AdminDashboard() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ function AdminDashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   function handleLogout() {
-    localStorage.removeItem('mcuAdminLoggedIn')
+    logout()
     navigate('/login')
   }
 

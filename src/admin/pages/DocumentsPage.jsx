@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { documents } from '../data/mockAdminData'
-import { fetchDocumentsFromMockServer, PAGE_SIZE } from '../services/documentService'
+import { fetchDocumentsFromApi, PAGE_SIZE } from '../services/documentService'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge, TypeBadge } from '../components/Badges'
 
@@ -10,6 +10,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
   const [status, setStatus] = useState('All')
   const queryKey = `${page}|${search}|${status}`
   const [serverData, setServerData] = useState({ rows: [], total: 0, queryKey: '' })
+  const [error, setError] = useState('')
   const isLoading = !compact && serverData.queryKey !== queryKey
   const totalPages = Math.max(1, Math.ceil(serverData.total / PAGE_SIZE))
   const visibleRows = compact ? documents.slice(0, 3) : serverData.rows
@@ -31,16 +32,24 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
 
     let isCurrentRequest = true
 
-    fetchDocumentsFromMockServer({
+    fetchDocumentsFromApi({
       page,
       pageSize: PAGE_SIZE,
       search,
       status,
-    }).then((data) => {
-      if (isCurrentRequest) {
-        setServerData({ ...data, queryKey })
-      }
     })
+      .then((data) => {
+        if (isCurrentRequest) {
+          setError('')
+          setServerData({ ...data, queryKey })
+        }
+      })
+      .catch((requestError) => {
+        if (isCurrentRequest) {
+          setError(requestError.message || 'Unable to load documents.')
+          setServerData({ rows: [], total: 0, queryKey })
+        }
+      })
 
     return () => {
       isCurrentRequest = false
@@ -127,6 +136,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload }) {
         isLoading={isLoading}
         emptyMessage="No documents found for this filter."
       />
+      {error && <p className="form-error mt-3">{error}</p>}
 
       {!compact && (
         <div className="datatable-footer">
