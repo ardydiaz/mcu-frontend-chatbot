@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import MessageBubble from '../components/MessageBubble'
-import { askChatbot } from '../services/chatService'
+import { askChatbot, fetchChatbotTopics } from '../services/chatService'
 
 const topicGroups = [
   {
@@ -153,8 +153,29 @@ function getLocalAssistantReply(question) {
   }
 }
 
+function getMessagePreview(text) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim()
+  return normalized.length > 54 ? `${normalized.slice(0, 54)}...` : normalized
+}
+
+function isScreenshotRequest(question) {
+  return /\b(screenshot|screenshots|screen shot|screen shots|image|images|picture|pictures|photo|photos|visual|show me|source page|source pages|page image|page images|pdf page|pdf pages)\b/i.test(question)
+}
+
+function isFollowUpScreenshotRequest(question) {
+  const remainingText = question
+    .toLowerCase()
+    .replace(/\b(can|could|you|please|give|send|show|me|the|a|an|of|or|and|for|source|page|pdf|image|images|picture|photo|screenshot|screen shot|visual|more|explain|explanation|details|detailed|with)\b/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return isScreenshotRequest(question) && remainingText.length === 0
+}
+
 function Chatbot() {
   const [message, setMessage] = useState('')
+  const [knowledgeTopics, setKnowledgeTopics] = useState(topicGroups)
   const [chatThreads, setChatThreads] = useState(initialThreads)
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
   const [isTyping, setIsTyping] = useState(false)
@@ -166,12 +187,54 @@ function Chatbot() {
     () => chatThreads.find((thread) => thread.id === activeThreadId) ?? chatThreads[0],
     [activeThreadId, chatThreads],
   )
+  const recentThreads = useMemo(
+    () =>
+      chatThreads
+        .map((thread) => {
+          const latestMessage = thread.messages[thread.messages.length - 1]
+
+          return {
+            ...thread,
+            preview: latestMessage?.role === 'user'
+              ? getMessagePreview(latestMessage.text)
+              : getMessagePreview(latestMessage?.text || thread.topic),
+            sortTime: thread.lastActivityAt || 0,
+          }
+        })
+        .sort((a, b) => b.sortTime - a.sortTime),
+    [chatThreads],
+  )
 
   useEffect(() => {
     return () => {
       if (typingTimerRef.current) {
         clearTimeout(typingTimerRef.current)
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadTopics() {
+      try {
+        const data = await fetchChatbotTopics()
+        const uploadedTopicGroups = data.topicGroups?.filter((group) => group.items?.length) || []
+
+        if (isMounted && uploadedTopicGroups.length > 0) {
+          setKnowledgeTopics(uploadedTopicGroups)
+        }
+      } catch {
+        if (isMounted) {
+          setKnowledgeTopics(topicGroups)
+        }
+      }
+    }
+
+    loadTopics()
+
+    return () => {
+      isMounted = false
     }
   }, [])
 
@@ -211,26 +274,39 @@ function Chatbot() {
 
   function buildApiAssistantReply(data) {
     const sourceText = data.sources?.length
-      ? data.sources.map((source) => `${source.title}, page ${source.pageNumber}`).join('; ')
+      ? data.sources
+        .slice(0, 3)
+        .map((source) => `${source.title}, page ${source.pageLabel || source.printedPageNumber || source.pageNumber}`)
+        .join('; ')
       : 'MCU Knowledge Base'
+    const extraSourceCount = data.sources?.length > 3 ? data.sources.length - 3 : 0
 
     return {
       author: 'MCU Guide',
       role: 'assistant',
       text: data.answer || 'I found a response, but it did not include answer text.',
+      blocks: data.answerBlocks,
+      images: data.images || [],
+      showImages: isScreenshotRequest(data.question || ''),
       time: getCurrentTime(),
-      source: sourceText,
+      source: extraSourceCount > 0 ? `${sourceText}; +${extraSourceCount} more` : sourceText,
     }
   }
 
-  function buildErrorReply(errorMessage, question) {
+  function getLatestSourceMessage() {
+    return [...activeThread.messages]
+      .reverse()
+      .find((messageItem) => messageItem.role === 'assistant' && messageItem.images?.length > 0)
+  }
+
+  function buildErrorReply(question) {
     const fallbackReply = getLocalAssistantReply(question)
 
     return {
       ...fallbackReply,
-      text: `${errorMessage} ${fallbackReply.text}`,
+      text: fallbackReply.text,
       time: getCurrentTime(),
-      source: fallbackReply.source,
+      source: `${fallbackReply.source} fallback`,
     }
   }
 
@@ -253,12 +329,38 @@ function Chatbot() {
     updateThread(activeThread.id, (thread) => ({
       ...thread,
       updatedAt: 'Just now',
-      title: thread.title === 'New chat' ? trimmedQuestion.slice(0, 24) : thread.title,
+      lastActivityAt: Date.now(),
+      title: ['New chat', 'New conversation'].includes(thread.title) ? trimmedQuestion.slice(0, 32) : thread.title,
+      topic: getMessagePreview(trimmedQuestion),
       messages: [...thread.messages, userMessage],
     }))
 
     setMessage('')
     setIsTyping(true)
+
+    if (isFollowUpScreenshotRequest(trimmedQuestion)) {
+      const sourceMessage = getLatestSourceMessage()
+      const sourceImages = sourceMessage?.images || []
+
+      const assistantReply = {
+        author: 'MCU Guide',
+        role: 'assistant',
+        text: sourceImages.length > 0
+          ? sourceMessage.text
+          : 'I do not have source screenshots available from the previous answer. Ask about a specific topic first, then request the source page.',
+        blocks: sourceImages.length > 0 ? sourceMessage.blocks : undefined,
+        time: getCurrentTime(),
+        images: sourceImages,
+        showImages: sourceImages.length > 0,
+      }
+
+      updateThread(activeThread.id, (thread) => ({
+        ...thread,
+        messages: [...thread.messages, assistantReply],
+      }))
+      setIsTyping(false)
+      return
+    }
 
     try {
       const data = await askChatbot(trimmedQuestion)
@@ -268,11 +370,8 @@ function Chatbot() {
         ...thread,
         messages: [...thread.messages, assistantReply],
       }))
-    } catch (requestError) {
-      const assistantReply = buildErrorReply(
-        requestError.message || 'I could not reach the MCU API right now.',
-        trimmedQuestion,
-      )
+    } catch {
+      const assistantReply = buildErrorReply(trimmedQuestion)
 
       updateThread(activeThread.id, (thread) => ({
         ...thread,
@@ -344,10 +443,10 @@ function Chatbot() {
         <aside className="mcu-kb-nav" aria-label="Knowledge topics">
           <div className="mcu-kb-nav-head">
             <p>Topics</p>
-            <span>{topicGroups.reduce((total, group) => total + group.items.length, 0)} guides</span>
+            <span>{knowledgeTopics.reduce((total, group) => total + group.items.length, 0)} guides</span>
           </div>
           <div className="mcu-kb-topic-list">
-            {topicGroups.map((group) => (
+            {knowledgeTopics.map((group) => (
               <section key={group.label}>
                 <h2>{group.label}</h2>
                 {group.items.map((item) => (
@@ -427,7 +526,7 @@ function Chatbot() {
           </section>
           <section>
             <p>Recent Conversations</p>
-            {chatThreads.slice(0, 5).map((thread) => (
+            {recentThreads.slice(0, 5).map((thread) => (
               <button
                 className={thread.id === activeThread.id ? 'active' : ''}
                 type="button"
@@ -435,7 +534,7 @@ function Chatbot() {
                 onClick={() => handleThreadSelect(thread.id)}
               >
                 <strong>{thread.title}</strong>
-                <span>{thread.topic}</span>
+                <span>{thread.preview || thread.topic}</span>
               </button>
             ))}
           </section>
