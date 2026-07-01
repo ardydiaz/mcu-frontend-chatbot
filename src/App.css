@@ -417,7 +417,7 @@ h6 {
   padding: 16px 22px;
 }
 
-.message.user .bubble::before {
+/* .message.user .bubble::before {
   content: '';
   position: absolute;
   right: -7px;
@@ -426,7 +426,7 @@ h6 {
   height: 16px;
   background: var(--mcu-purple-700);
   clip-path: polygon(0 0, 100% 100%, 0 100%);
-}
+} */
 
 .message-meta {
   display: flex;
@@ -2147,6 +2147,195 @@ h6 {
   opacity: 0.5;
 }
 
+.mcu-kb-shell.is-embed {
+  position: relative;
+  inset: auto;
+  height: 100svh;
+  min-height: 480px;
+  padding: 0;
+  background: #fff;
+}
+
+.mcu-kb-shell.is-embed .mcu-kb-layout {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+}
+
+.mcu-kb-shell.is-embed .mcu-kb-chat {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.mcu-kb-shell.is-embed .mcu-kb-prompt-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  padding: 14px;
+}
+
+.mcu-kb-shell.is-embed .mcu-kb-stream {
+  padding: 16px 16px 18px;
+}
+
+.mcu-kb-shell.is-embed .mcu-kb-composer {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 1;
+  margin: 0;
+  min-height: 0;
+  border-width: 1px 0 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.mcu-kb-shell.is-compact-embed {
+  min-height: 420px;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-chat {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: #fff;
+}
+
+.mcu-kb-embed-header {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--mcu-purple-700);
+  box-shadow: 0 2px 10px rgba(42, 0, 63, 0.18);
+}
+
+.mcu-kb-embed-header button {
+  border: 0;
+  padding: 0;
+  color: #fff;
+  font: inherit;
+  font-size: 1.8rem;
+  line-height: 1;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mcu-kb-embed-header > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: var(--mcu-purple-850);
+  font-weight: 900;
+  background: var(--mcu-gold);
+}
+
+.mcu-kb-embed-header div {
+  min-width: 0;
+}
+
+.mcu-kb-embed-header strong,
+.mcu-kb-embed-header small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcu-kb-embed-header strong {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.mcu-kb-embed-header small {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-stream {
+  gap: 12px;
+  padding: 18px 14px;
+  background: #fff;
+}
+
+.mcu-kb-shell.is-compact-embed .message {
+  max-width: 100%;
+}
+
+.mcu-kb-shell.is-compact-embed .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 0.78rem;
+}
+
+.mcu-kb-shell.is-compact-embed .bubble {
+  padding: 12px 13px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.mcu-kb-shell.is-compact-embed .message:not(.user) .bubble {
+  background: #f6f6f7;
+  border-color: rgba(92, 41, 124, 0.08);
+}
+
+.mcu-kb-shell.is-compact-embed .message:not(.user) .bubble::before {
+  display: none;
+}
+
+.mcu-kb-shell.is-compact-embed .message.user .bubble {
+  max-width: min(300px, 78vw);
+  border-radius: 12px;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer {
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer input {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer button {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  width: 40px;
+  height: 44px;
+  padding: 0;
+  transform: none;
+  border-radius: 14px;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  background: var(--mcu-gold);
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer button::before {
+  content: '➜';
+  display: block;
+  color: var(--mcu-purple-850);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: none;
+}
+
 .mcu-kb-insights section {
   border: 1px solid #e8eef5;
   border-radius: 14px;
@@ -3579,7 +3768,8 @@ button.avatar-profile:hover {
   font-weight: 900;
 }
 
-.upload-field input {
+.upload-field input,
+.upload-field select {
   width: 100%;
   border: 1px solid rgba(92, 41, 124, 0.14);
   border-radius: 8px;
@@ -3588,7 +3778,8 @@ button.avatar-profile:hover {
   background: #fff;
 }
 
-.upload-field input:focus {
+.upload-field input:focus,
+.upload-field select:focus {
   border-color: var(--mcu-purple-700);
   outline: none;
   box-shadow: 0 0 0 4px rgba(100, 41, 138, 0.1);

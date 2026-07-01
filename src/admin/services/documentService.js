@@ -1,4 +1,4 @@
-import apiFetch, { API_BASE_URL, clearStoredSession, getStoredToken } from '../../services/apiClient'
+import apiFetch, { API_BASE_URL, clearStoredSession, getStoredToken, isTokenExpired } from '../../services/apiClient'
 
 export const PAGE_SIZE = 5
 
@@ -24,6 +24,7 @@ function mapDocument(document) {
     id: `DOC-${document.id}`,
     title: document.title,
     owner: document.uploaded_by || 'Unknown',
+    scope: document.site_scope || 'general',
     status: 'Published',
     type: getFileType(document.file_path),
     date: formatDate(document.created_at),
@@ -55,7 +56,7 @@ async function fetchDocumentsFromApi({ page, pageSize, search, status }) {
   }
 }
 
-async function uploadDocument({ title, file, onProgress, onUploadComplete }) {
+async function uploadDocument({ title, siteScope = 'general', file, onProgress, onUploadComplete }) {
   const formData = new FormData()
   formData.append('file', file)
 
@@ -63,12 +64,20 @@ async function uploadDocument({ title, file, onProgress, onUploadComplete }) {
     formData.append('title', title.trim())
   }
 
+  formData.append('siteScope', siteScope)
+
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
 
     request.open('POST', new URL('/api/documents/upload', API_BASE_URL).toString())
 
     const token = getStoredToken()
+
+    if (isTokenExpired(token)) {
+      clearStoredSession()
+      reject(new Error('Your session has expired. Please sign in again.'))
+      return
+    }
 
     if (token) {
       request.setRequestHeader('Authorization', `Bearer ${token}`)

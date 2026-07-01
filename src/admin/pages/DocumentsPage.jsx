@@ -145,6 +145,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
           { key: 'id', label: 'ID', className: 'fw-semibold text-[#5c297c]' },
           { key: 'title', label: 'Document', className: 'fw-bold' },
           { key: 'type', label: 'Type', render: (document) => <TypeBadge value={document.type} /> },
+          { key: 'scope', label: 'Scope', className: 'text-capitalize' },
           { key: 'owner', label: 'Owner' },
           { key: 'status', label: 'Status', render: (document) => <StatusBadge value={document.status} /> },
           { key: 'date', label: 'Date' },
@@ -217,6 +218,10 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
                   <div>
                     <span>Uploaded By</span>
                     <strong>{selectedDocument.uploadedBy}</strong>
+                  </div>
+                  <div>
+                    <span>Scope</span>
+                    <strong>{selectedDocument.siteScope || 'general'}</strong>
                   </div>
                   <div>
                     <span>Pages / Sections</span>

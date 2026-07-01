@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import { uploadDocument } from '../services/documentService'
+import { fallbackScopeOptions, fetchScopeOptions } from '../services/scopeService'
 
 const allowedExtensions = ['pdf', 'doc', 'docx', 'txt']
 const allowedAcceptTypes = '.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain'
@@ -34,6 +35,8 @@ function isAllowedDocument(file) {
 
 function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
   const [title, setTitle] = useState('')
+  const [siteScope, setSiteScope] = useState('general')
+  const [siteScopeOptions, setSiteScopeOptions] = useState(fallbackScopeOptions)
   const [file, setFile] = useState(null)
   const [error, setError] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -41,6 +44,19 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadPhase, setUploadPhase] = useState('idle')
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    const timer = window.setTimeout(async () => {
+      try {
+        const scopes = await fetchScopeOptions()
+        setSiteScopeOptions(scopes)
+      } catch {
+        setSiteScopeOptions(fallbackScopeOptions)
+      }
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [])
 
   function selectFile(selectedFile) {
     setError('')
@@ -91,11 +107,13 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
     try {
       await uploadDocument({
         title,
+        siteScope,
         file,
         onProgress: setUploadProgress,
         onUploadComplete: () => setUploadPhase('processing'),
       })
       setTitle('')
+      setSiteScope('general')
       setFile(null)
       setUploadProgress(100)
       setUploadPhase('complete')
@@ -168,6 +186,15 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Document title"
             />
+          </label>
+
+          <label className="upload-field">
+            Target Website / Scope
+            <select value={siteScope} onChange={(event) => setSiteScope(event.target.value)}>
+              {siteScopeOptions.map((option) => (
+                <option value={option.value} key={option.value}>{option.label}</option>
+              ))}
+            </select>
           </label>
 
           <div className="upload-file-summary">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import MessageBubble from '../components/MessageBubble'
 import { askChatbot, fetchChatbotTopics } from '../services/chatService'
 
@@ -38,15 +39,6 @@ const topicGroups = [
   },
 ]
 
-const welcomeCards = [
-  { icon: 'A', title: 'Academic Programs', category: 'Academics', prompt: 'Tell me about academic programs.' },
-  { icon: 'C', title: 'Academic Calendar', category: 'Academics', prompt: 'What is the academic calendar?' },
-  { icon: 'S', title: 'Student Life', category: 'Student Life', prompt: 'Tell me about student life.' },
-  { icon: '$', title: 'Tuition Info', category: 'Finance', prompt: 'Where can I find tuition information?' },
-  { icon: 'L', title: 'Library', category: 'Services', prompt: 'What are the library hours?' },
-  { icon: '?', title: 'Admissions', category: 'Admissions', prompt: 'What are the admission requirements?' },
-]
-
 const initialThreads = [
   {
     id: 'welcome',
@@ -57,69 +49,11 @@ const initialThreads = [
       {
         author: 'MCU Guide',
         role: 'assistant',
-        text: 'Welcome. Ask about MCU admissions, registrar services, tuition, library, student life, or any uploaded knowledge-base document.',
+        text: '🎓 Welcome to the MCU Knowledge Assistant!',
         time: getCurrentTime(),
         source: 'MCU Knowledge Base',
       },
     ],
-  },
-  {
-    id: 'tuition',
-    title: 'Tuition Help',
-    topic: 'Finance',
-    updatedAt: '1 day ago',
-    messages: [
-      {
-        author: 'MCU Guide',
-        role: 'assistant',
-        text: 'I can help with tuition payment steps, deadlines, and payment channels.',
-        time: '9:10 AM',
-        source: 'Finance Office',
-      },
-    ],
-  },
-  {
-    id: 'campus-services',
-    title: 'Campus Services',
-    topic: 'Student Life',
-    updatedAt: '3 days ago',
-    messages: [
-      {
-        author: 'MCU Guide',
-        role: 'assistant',
-        text: 'Need help with campus services, offices, or student concerns? I can point you to the right office.',
-        time: '4:45 PM',
-        source: 'Campus Services',
-      },
-    ],
-  },
-]
-
-const responseRules = [
-  {
-    keywords: ['tor', 'transcript', 'records', 'registrar'],
-    text: 'You can request your TOR through the Registrar service desk. Bring a valid ID, student number, and any required clearance.',
-    source: 'Registrar Office',
-  },
-  {
-    keywords: ['enroll', 'enrollment', 'admission', 'admissions'],
-    text: 'Enrollment announcements are usually posted by Admissions and the Registrar. Please check the official schedule and prepare your clearance requirements.',
-    source: 'Admissions Office',
-  },
-  {
-    keywords: ['tuition', 'payment', 'fees', 'billing'],
-    text: 'For tuition and fees, you can check the Finance Office process and payment options. I can also help outline the steps if needed.',
-    source: 'Finance Office',
-  },
-  {
-    keywords: ['portal', 'password', 'login', 'account'],
-    text: 'If your student portal needs a reset, I can help you with the common steps and point you to the IT support process.',
-    source: 'IT Support',
-  },
-  {
-    keywords: ['clearance', 'requirements'],
-    text: 'Clearance requirements depend on your office and semester status. The Registrar or your program office can confirm the latest checklist.',
-    source: 'Registrar Office',
   },
 ]
 
@@ -128,29 +62,6 @@ function getCurrentTime() {
     hour: 'numeric',
     minute: '2-digit',
   })
-}
-
-function getLocalAssistantReply(question) {
-  const normalized = question.toLowerCase()
-  const match = responseRules.find((rule) => rule.keywords.some((keyword) => normalized.includes(keyword)))
-
-  if (match) {
-    return {
-      author: 'MCU Guide',
-      role: 'assistant',
-      text: match.text,
-      time: getCurrentTime(),
-      source: match.source,
-    }
-  }
-
-  return {
-    author: 'MCU Guide',
-    role: 'assistant',
-    text: 'I can help with registrar, enrollment, tuition, and campus support. If you want, I can connect this to a specific office or FAQ section.',
-    time: getCurrentTime(),
-    source: 'MCU Student Support',
-  }
 }
 
 function getMessagePreview(text) {
@@ -173,37 +84,82 @@ function isFollowUpScreenshotRequest(question) {
   return isScreenshotRequest(question) && remainingText.length === 0
 }
 
+function getEmbedOrigin(isEmbedMode, explicitEmbedOrigin) {
+  if (explicitEmbedOrigin) {
+    try {
+      return new URL(explicitEmbedOrigin).origin
+    } catch {
+      return explicitEmbedOrigin
+    }
+  }
+
+  if (!isEmbedMode) {
+    return window.location.origin
+  }
+
+  try {
+    return document.referrer ? new URL(document.referrer).origin : window.location.origin
+  } catch {
+    return window.location.origin
+  }
+}
+
+function buildRecentConversations(chatThreads) {
+  const recentQuestions = chatThreads.flatMap((thread) =>
+    thread.messages
+      .map((messageItem, index) => {
+        if (messageItem.role !== 'user') {
+          return null
+        }
+
+        const nextAssistantMessage = thread.messages
+          .slice(index + 1)
+          .find((nextMessage) => nextMessage.role === 'assistant')
+
+        return {
+          id: `${thread.id}-${index}`,
+          threadId: thread.id,
+          title: getMessagePreview(messageItem.text),
+          preview: getMessagePreview(nextAssistantMessage?.text || thread.topic),
+          sortTime: messageItem.createdAt || thread.lastActivityAt || 0,
+        }
+      })
+      .filter(Boolean),
+  )
+
+  if (recentQuestions.length > 0) {
+    return [...recentQuestions].sort((a, b) => b.sortTime - a.sortTime)
+  }
+
+  return []
+}
+
 function Chatbot() {
+  const [searchParams] = useSearchParams()
+  const isEmbedMode = searchParams.get('embed') === '1'
+  const isCompactEmbedMode = isEmbedMode && searchParams.get('compact') === '1'
+  const siteScope = searchParams.get('scope') || 'general'
+  const explicitEmbedOrigin = searchParams.get('embedOrigin')
+  const embedOrigin = useMemo(
+    () => getEmbedOrigin(isEmbedMode, explicitEmbedOrigin),
+    [explicitEmbedOrigin, isEmbedMode],
+  )
   const [message, setMessage] = useState('')
   const [knowledgeTopics, setKnowledgeTopics] = useState(topicGroups)
   const [chatThreads, setChatThreads] = useState(initialThreads)
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
+  const [isEmbedAuthorized, setIsEmbedAuthorized] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef(null)
   const bottomRef = useRef(null)
   const chatStreamRef = useRef(null)
+  const activityCounterRef = useRef(initialThreads.length)
 
   const activeThread = useMemo(
     () => chatThreads.find((thread) => thread.id === activeThreadId) ?? chatThreads[0],
     [activeThreadId, chatThreads],
   )
-  const recentThreads = useMemo(
-    () =>
-      chatThreads
-        .map((thread) => {
-          const latestMessage = thread.messages[thread.messages.length - 1]
-
-          return {
-            ...thread,
-            preview: latestMessage?.role === 'user'
-              ? getMessagePreview(latestMessage.text)
-              : getMessagePreview(latestMessage?.text || thread.topic),
-            sortTime: thread.lastActivityAt || 0,
-          }
-        })
-        .sort((a, b) => b.sortTime - a.sortTime),
-    [chatThreads],
-  )
+  const recentConversations = buildRecentConversations(chatThreads)
 
   useEffect(() => {
     return () => {
@@ -218,15 +174,19 @@ function Chatbot() {
 
     async function loadTopics() {
       try {
-        const data = await fetchChatbotTopics()
+        const data = await fetchChatbotTopics(siteScope, embedOrigin)
         const uploadedTopicGroups = data.topicGroups?.filter((group) => group.items?.length) || []
 
         if (isMounted && uploadedTopicGroups.length > 0) {
           setKnowledgeTopics(uploadedTopicGroups)
         }
-      } catch {
+      } catch (error) {
         if (isMounted) {
-          setKnowledgeTopics(topicGroups)
+          if (String(error.message || '').toLowerCase().includes('not authorized')) {
+            setIsEmbedAuthorized(false)
+          } else {
+            setKnowledgeTopics(topicGroups)
+          }
         }
       }
     }
@@ -236,7 +196,7 @@ function Chatbot() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [embedOrigin, siteScope])
 
   useEffect(() => {
     const stream = chatStreamRef.current
@@ -272,6 +232,11 @@ function Chatbot() {
     }
   }
 
+  function getNextActivityOrder() {
+    activityCounterRef.current += 1
+    return activityCounterRef.current
+  }
+
   function buildApiAssistantReply(data) {
     const sourceText = data.sources?.length
       ? data.sources
@@ -299,14 +264,13 @@ function Chatbot() {
       .find((messageItem) => messageItem.role === 'assistant' && messageItem.images?.length > 0)
   }
 
-  function buildErrorReply(question) {
-    const fallbackReply = getLocalAssistantReply(question)
-
+  function buildErrorReply(errorMessage) {
     return {
-      ...fallbackReply,
-      text: fallbackReply.text,
+      author: 'MCU Guide',
+      role: 'assistant',
+      text: errorMessage || 'I cannot connect to the official knowledge base right now. Please try again later or contact the appropriate university office for confirmation.',
       time: getCurrentTime(),
-      source: `${fallbackReply.source} fallback`,
+      source: 'MCU Knowledge Base unavailable',
     }
   }
 
@@ -319,17 +283,19 @@ function Chatbot() {
 
     stopTypingTimer()
 
+    const submittedAt = getNextActivityOrder()
     const userMessage = {
       author: 'Student',
       role: 'user',
       text: trimmedQuestion,
       time: getCurrentTime(),
+      createdAt: submittedAt,
     }
 
     updateThread(activeThread.id, (thread) => ({
       ...thread,
       updatedAt: 'Just now',
-      lastActivityAt: Date.now(),
+      lastActivityAt: submittedAt,
       title: ['New chat', 'New conversation'].includes(thread.title) ? trimmedQuestion.slice(0, 32) : thread.title,
       topic: getMessagePreview(trimmedQuestion),
       messages: [...thread.messages, userMessage],
@@ -363,15 +329,15 @@ function Chatbot() {
     }
 
     try {
-      const data = await askChatbot(trimmedQuestion)
+      const data = await askChatbot(trimmedQuestion, siteScope, embedOrigin)
       const assistantReply = buildApiAssistantReply(data)
 
       updateThread(activeThread.id, (thread) => ({
         ...thread,
         messages: [...thread.messages, assistantReply],
       }))
-    } catch {
-      const assistantReply = buildErrorReply(trimmedQuestion)
+    } catch (error) {
+      const assistantReply = buildErrorReply(error.message)
 
       updateThread(activeThread.id, (thread) => ({
         ...thread,
@@ -399,7 +365,8 @@ function Chatbot() {
   }
 
   function handleNewChat() {
-    const id = `chat-${Date.now()}`
+    const createdAt = getNextActivityOrder()
+    const id = `chat-${createdAt}`
 
     setChatThreads((currentThreads) => [
       {
@@ -416,6 +383,7 @@ function Chatbot() {
             source: 'MCU Student Support',
           },
         ],
+        lastActivityAt: createdAt,
       },
       ...currentThreads,
     ])
@@ -424,7 +392,8 @@ function Chatbot() {
   }
 
   return (
-    <main className="mcu-kb-shell">
+    <main className={`mcu-kb-shell ${isEmbedMode ? 'is-embed' : ''} ${isCompactEmbedMode ? 'is-compact-embed' : ''}`}>
+      {!isEmbedMode && (
       <header className="mcu-kb-header">
         <div className="mcu-kb-brand">
           <span aria-hidden="true">MCU</span>
@@ -438,8 +407,10 @@ function Chatbot() {
           <button type="button" onClick={handleNewChat}>New Chat</button>
         </div>
       </header>
+      )}
 
       <section className="mcu-kb-layout">
+        {!isEmbedMode && (
         <aside className="mcu-kb-nav" aria-label="Knowledge topics">
           <div className="mcu-kb-nav-head">
             <p>Topics</p>
@@ -459,11 +430,38 @@ function Chatbot() {
             ))}
           </div>
         </aside>
+        )}
 
         <section className="mcu-kb-chat" aria-label="Chat with MCU Guide">
+          {isCompactEmbedMode && (
+            <header className="mcu-kb-embed-header">
+              <button type="button" aria-label="Back">‹</button>
+              <span aria-hidden="true">M</span>
+              <div>
+                <strong>MCU Guide</strong>
+                <small>I am here to assist you!</small>
+              </div>
+            </header>
+          )}
+
+          {isEmbedMode && !isEmbedAuthorized ? (
+            <div className="mcu-kb-stream">
+              <MessageBubble
+                message={{
+                  author: 'MCU Guide',
+                  role: 'assistant',
+                  text: 'This chatbot embed is not authorized for this website.',
+                  time: getCurrentTime(),
+                  source: 'MCU Guide',
+                }}
+              />
+            </div>
+          ) : (
+          <>
+
+          {!isEmbedMode && (
           <div className="mcu-kb-hero">
             <div>
-              <p>AI powered campus support</p>
               <h1>Ask questions across uploaded university documents.</h1>
               <span>Answers are grounded in your knowledge base whenever matching content is found.</span>
             </div>
@@ -472,17 +470,6 @@ function Chatbot() {
               <span>Knowledge access</span>
             </div>
           </div>
-
-          {activeThread.messages.length <= 1 && (
-            <div className="mcu-kb-prompt-grid">
-              {welcomeCards.map((card) => (
-                <button type="button" key={card.title} onClick={() => handleQuickAction(card.prompt)}>
-                  <span>{card.icon}</span>
-                  <strong>{card.title}</strong>
-                  <small>{card.category}</small>
-                </button>
-              ))}
-            </div>
           )}
 
           <div className="mcu-kb-stream" ref={chatStreamRef}>
@@ -516,8 +503,11 @@ function Chatbot() {
             />
             <button type="submit" disabled={!message.trim() || isTyping}>Send</button>
           </form>
+          </>
+          )}
         </section>
 
+        {!isEmbedMode && (
         <aside className="mcu-kb-insights" aria-label="Conversation context">
           <section>
             <p>Current Session</p>
@@ -526,23 +516,24 @@ function Chatbot() {
           </section>
           <section>
             <p>Recent Conversations</p>
-            {recentThreads.slice(0, 5).map((thread) => (
+            {recentConversations.length === 0 && (
+              <small>No recent questions yet.</small>
+            )}
+            {recentConversations.slice(0, 5).map((conversation) => (
               <button
-                className={thread.id === activeThread.id ? 'active' : ''}
+                className={conversation.threadId === activeThread.id ? 'active' : ''}
                 type="button"
-                key={thread.id}
-                onClick={() => handleThreadSelect(thread.id)}
+                key={conversation.id}
+                onClick={() => handleThreadSelect(conversation.threadId)}
               >
-                <strong>{thread.title}</strong>
-                <span>{thread.preview || thread.topic}</span>
+                <strong>{conversation.title}</strong>
+                <span>{conversation.preview}</span>
               </button>
             ))}
           </section>
-          <section>
-            <p>Source Behavior</p>
-            <small>When available, responses include document names and page numbers from the uploaded knowledge base.</small>
-          </section>
+         
         </aside>
+        )}
       </section>
     </main>
   )

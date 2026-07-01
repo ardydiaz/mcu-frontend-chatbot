@@ -11,6 +11,48 @@ function getStoredToken() {
   return localStorage.getItem(TOKEN_KEY)
 }
 
+function getTokenPayload(token) {
+  if (!token) {
+    return null
+  }
+
+  const [, payload] = token.split('.')
+
+  if (!payload) {
+    return null
+  }
+
+  try {
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
+}
+
+function isTokenExpired(token) {
+  if (!token) {
+    return false
+  }
+
+  const payload = getTokenPayload(token)
+
+  if (!payload?.exp) {
+    return true
+  }
+
+  return payload.exp * 1000 <= Date.now()
+}
+
+function getStoredTokenExpiresAt() {
+  const payload = getTokenPayload(getStoredToken())
+
+  if (!payload?.exp) {
+    return null
+  }
+
+  return payload.exp * 1000
+}
+
 function setStoredSession({ token, user }) {
   localStorage.setItem(LOGGED_IN_KEY, 'true')
   localStorage.setItem(TOKEN_KEY, token)
@@ -41,7 +83,18 @@ function getStoredUser() {
 }
 
 function isLoggedIn() {
-  return Boolean(getStoredToken())
+  const token = getStoredToken()
+
+  if (!token) {
+    return false
+  }
+
+  if (isTokenExpired(token)) {
+    clearStoredSession()
+    return false
+  }
+
+  return true
 }
 
 async function parseResponse(response) {
@@ -61,6 +114,11 @@ async function apiFetch(path, options = {}) {
 
   if (auth) {
     const token = getStoredToken()
+
+    if (isTokenExpired(token)) {
+      clearStoredSession()
+      throw new Error('Your session has expired. Please sign in again.')
+    }
 
     if (token) {
       requestHeaders.set('Authorization', `Bearer ${token}`)
@@ -93,9 +151,11 @@ export {
   API_BASE_URL,
   TOKEN_KEY,
   clearStoredSession,
+  getStoredTokenExpiresAt,
   getStoredToken,
   getStoredUser,
   isLoggedIn,
+  isTokenExpired,
   setStoredSession,
 }
 

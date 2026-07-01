@@ -4,8 +4,11 @@ import AdminSidebar from '../components/AdminSidebar'
 import AdminTopbar from '../components/AdminTopbar'
 import ChatLogsPage from './ChatLogsPage'
 import DocumentsPage from './DocumentsPage'
+import EmbedGeneratorPage from './EmbedGeneratorPage'
+import ScopeManagementPage from './ScopeManagementPage'
 import UploadDocumentPage from './UploadDocumentPage'
 import UsersPage from './UsersPage'
+import WebsiteAccessPage from './WebsiteAccessPage'
 import { logout } from '../../services/authService'
 
 function AdminDashboard() {
@@ -22,7 +25,7 @@ function AdminDashboard() {
 
   return (
     <main className="nexus-admin-shell">
-      <AdminSidebar activeView={activeView} onViewChange={setActiveView} />
+      <AdminSidebar activeView={activeView} onViewChange={setActiveView} onLogout={handleLogout} />
 
       <section className="nexus-admin-workspace">
         <AdminTopbar
@@ -38,6 +41,9 @@ function AdminDashboard() {
               refreshKey={documentRefreshKey}
             />
           )}
+          {activeView === 'embedGenerator' && <EmbedGeneratorPage />}
+          {activeView === 'websiteAccess' && <WebsiteAccessPage />}
+          {activeView === 'scopeManagement' && <ScopeManagementPage />}
           {activeView === 'chatLogs' && <ChatLogsPage />}
           {activeView === 'users' && <UsersPage />}
         </div>

@@ -1,9 +1,22 @@
-function AdminSidebar({ activeView, onViewChange }) {
+import { useState } from 'react'
+
+function AdminSidebar({ activeView, onViewChange, onLogout }) {
+  const [openMenus, setOpenMenus] = useState({ embed: true })
   const sections = [
     {
       title: 'Admin',
       items: [
         { label: 'Documents', view: 'documents', icon: 'D' },
+        {
+          label: 'Embed Generator',
+          icon: 'E',
+          children: [
+            { label: 'Chatbot Generator', view: 'embedGenerator', icon: 'C' },
+            { label: 'Website Access', view: 'websiteAccess', icon: 'W' },
+            { label: 'Scope Management', view: 'scopeManagement', icon: 'S' },
+          ],
+          menuKey: 'embed',
+        },
         { label: 'Chat History', view: 'chatLogs', icon: 'C' },
         { label: 'User Records', view: 'users', icon: 'U' },
       ],
@@ -29,7 +42,75 @@ function AdminSidebar({ activeView, onViewChange }) {
           <div className="grid gap-1" key={section.title}>
             <p className="mb-2 px-2 text-xs font-bold text-[#ffc52f]">{section.title}</p>
             {section.items.map((item) => {
-              const isActive = activeView === item.view || (activeView === 'upload' && item.view === 'documents')
+              const childViews = item.children?.map((child) => child.view) || []
+              const isChildActive = childViews.includes(activeView)
+              const isActive = activeView === item.view || isChildActive || (activeView === 'upload' && item.view === 'documents')
+              const isOpen = item.menuKey ? openMenus[item.menuKey] : false
+
+              if (item.children) {
+                return (
+                  <div className="grid gap-1" key={`${section.title}-${item.label}`}>
+                    <button
+                      className={`flex items-center justify-between rounded-md px-2.5 py-2 text-left text-sm font-bold transition ${
+                        isActive
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/85 hover:bg-white/10 hover:text-white'
+                      }`}
+                      type="button"
+                      onClick={() => {
+                        setOpenMenus((current) => ({
+                          ...current,
+                          [item.menuKey]: !current[item.menuKey],
+                        }))
+                      }}
+                      aria-expanded={isOpen}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="grid h-5 w-5 place-items-center rounded border border-[#ffc52f]/30 text-[0.65rem] text-white">
+                          {item.icon}
+                        </span>
+                        {item.label}
+                      </span>
+                      <span className={isActive || isOpen ? 'text-[#ffc52f]' : 'text-white/60'}>
+                        {isOpen ? '⌄' : '›'}
+                      </span>
+                    </button>
+
+                    {isOpen && (
+                      <div className="ml-4 grid gap-1 border-l border-[#ffc52f]/20 pl-3">
+                        {item.children.map((child) => {
+                          const isChildSelected = activeView === child.view
+
+                          return (
+                            <button
+                              className={`flex items-center justify-between rounded-md px-2.5 py-2 text-left text-xs font-bold transition ${
+                                isChildSelected
+                                  ? 'bg-[#ffc52f] text-[#2a003f]'
+                                  : 'text-white/75 hover:bg-white/10 hover:text-white'
+                              }`}
+                              type="button"
+                              key={`${item.label}-${child.label}`}
+                              onClick={() => onViewChange(child.view)}
+                            >
+                              <span className="flex items-center gap-3">
+                                <span className={`grid h-5 w-5 place-items-center rounded border text-[0.65rem] ${
+                                  isChildSelected
+                                    ? 'border-[#2a003f]/20 text-[#2a003f]'
+                                    : 'border-[#ffc52f]/30 text-white'
+                                }`}>
+                                  {child.icon}
+                                </span>
+                                {child.label}
+                              </span>
+                              <span className={isChildSelected ? 'text-[#2a003f]' : 'text-[#ffc52f]'}>&rsaquo;</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              }
 
               return (
                 <button
@@ -55,6 +136,17 @@ function AdminSidebar({ activeView, onViewChange }) {
           </div>
         ))}
       </nav>
+
+      <div className="mt-auto border-t border-white/10 p-3">
+        <button
+          className="flex w-full items-center justify-between rounded-md border border-[#ffc52f]/30 px-2.5 py-2 text-left text-sm font-bold text-[#ffc52f] transition hover:bg-white/10 hover:text-white"
+          type="button"
+          onClick={onLogout}
+        >
+          <span>Logout</span>
+          <span aria-hidden="true">&rsaquo;</span>
+        </button>
+      </div>
     </aside>
   )
 }
