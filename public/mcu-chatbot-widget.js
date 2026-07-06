@@ -9,6 +9,9 @@
   var position = currentScript && currentScript.dataset.position
     ? currentScript.dataset.position
     : 'right';
+  var embedToken = currentScript && currentScript.dataset.embedToken
+    ? currentScript.dataset.embedToken
+    : '';
 
   var panel = document.createElement('div');
   var button = document.createElement('button');
@@ -35,6 +38,9 @@
   try {
     var iframeUrl = new URL(chatbotUrl, window.location.href);
     iframeUrl.searchParams.set('embedOrigin', window.location.origin);
+    if (embedToken) {
+      iframeUrl.searchParams.set('embedToken', embedToken);
+    }
     iframe.src = iframeUrl.toString();
   } catch {
     iframe.src = chatbotUrl;

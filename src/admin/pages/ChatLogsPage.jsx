@@ -2,6 +2,9 @@ import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge } from '../components/Badges'
 import { conversations } from '../data/mockAdminData'
 
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966]'
+const smallButtonClass = 'rounded-lg border border-[#f0a733]/40 bg-white px-3 py-2 text-sm font-bold text-[#7a4a00] transition hover:bg-[#fff4cf]'
+
 function ChatLogsPage({ compact = false }) {
   const visibleRows = compact ? conversations.slice(0, 3) : conversations
 
@@ -13,7 +16,7 @@ function ChatLogsPage({ compact = false }) {
           <h3 className="m-0 text-xl font-bold text-[#3b0a57]">{compact ? 'Recent Questions' : 'Chat Logs'}</h3>
         </div>
         {!compact && (
-          <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]" type="button">
+          <button className={primaryButtonClass} type="button">
             Flag Low Confidence
           </button>
         )}
@@ -32,7 +35,7 @@ function ChatLogsPage({ compact = false }) {
             headerClassName: 'text-end',
             className: 'text-end',
             render: () => (
-              <button className="btn btn-sm btn-outline-warning" type="button">
+              <button className={smallButtonClass} type="button">
                 Open
               </button>
             ),

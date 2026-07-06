@@ -12,6 +12,10 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+const approveButtonClass = 'rounded-lg border border-green-200 bg-white px-3 py-2 text-sm font-bold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50'
+const rejectButtonClass = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50'
+
 function UsersPage() {
   const [users, setUsers] = useState([])
   const [error, setError] = useState('')
@@ -109,7 +113,7 @@ function UsersPage() {
           <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Access Control</p>
           <h3 className="m-0 text-xl font-bold text-[#3b0a57]">User Records</h3>
         </div>
-        <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]" type="button" onClick={loadUsers}>
+        <button className={primaryButtonClass} type="button" onClick={loadUsers}>
           Refresh
         </button>
       </div>
@@ -130,9 +134,9 @@ function UsersPage() {
             headerClassName: 'text-end',
             className: 'text-end',
             render: (user) => (
-              <div className="d-flex justify-content-end gap-2">
+              <div className="flex justify-end gap-2">
                 <button
-                  className="btn btn-sm btn-outline-success"
+                  className={approveButtonClass}
                   type="button"
                   disabled={updatingUserId === user.id || user.status === 'approved'}
                   onClick={() => handleApprovalChange(user.id, 'approved')}
@@ -140,7 +144,7 @@ function UsersPage() {
                   {updatingUserId === user.id ? 'Saving...' : 'Approve'}
                 </button>
                 <button
-                  className="btn btn-sm btn-outline-danger"
+                  className={rejectButtonClass}
                   type="button"
                   disabled={updatingUserId === user.id || user.status === 'rejected'}
                   onClick={() => handleApprovalChange(user.id, 'rejected')}

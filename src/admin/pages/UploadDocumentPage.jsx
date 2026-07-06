@@ -13,6 +13,11 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
+const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
+const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+const secondaryButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-3 font-extrabold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+
 function formatFileSize(size) {
   if (!size) {
     return '0 KB'
@@ -148,7 +153,7 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
         <div className="upload-head-actions">
           <span className="upload-format-pill">PDF, Word, TXT</span>
           {isModal && (
-            <button className="upload-modal-close" type="button" aria-label="Close upload modal" onClick={onClose}>
+            <button className={secondaryButtonClass} type="button" aria-label="Close upload modal" onClick={onClose}>
               Close
             </button>
           )}
@@ -166,6 +171,7 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
           onDrop={handleDrop}
         >
           <input
+            className="sr-only"
             ref={fileInputRef}
             type="file"
             accept={allowedAcceptTypes}
@@ -178,9 +184,10 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
         </label>
 
         <aside className="upload-details-panel">
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Document Title
             <input
+              className={inputClass}
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -188,9 +195,9 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
             />
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Target Website / Scope
-            <select value={siteScope} onChange={(event) => setSiteScope(event.target.value)}>
+            <select className={inputClass} value={siteScope} onChange={(event) => setSiteScope(event.target.value)}>
               {siteScopeOptions.map((option) => (
                 <option value={option.value} key={option.value}>{option.label}</option>
               ))}
@@ -228,7 +235,7 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
 
           {error && <p className="form-error">{error}</p>}
 
-          <button className="upload-submit" type="submit" disabled={isUploading || !file}>
+          <button className={primaryButtonClass} type="submit" disabled={isUploading || !file}>
             {isUploading ? 'Processing...' : 'Upload Document'}
           </button>
         </aside>

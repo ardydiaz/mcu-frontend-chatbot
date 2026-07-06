@@ -19,6 +19,14 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
+const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
+const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
+const checkboxClass = 'h-4 w-4 rounded border-[#d9d3e4] accent-[#5c297c]'
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+const secondaryButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-3 font-extrabold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+const smallButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+const dangerButtonClass = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50'
+
 function ScopeManagementPage() {
   const [scopes, setScopes] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -119,20 +127,22 @@ function ScopeManagementPage() {
         <form className="grid gap-4 rounded-xl border border-[#5c297c]/10 bg-[#faf7ff] p-4" onSubmit={handleSubmit}>
           <strong className="text-[#3b0a57]">{form.id ? 'Edit Scope' : 'Add Scope'}</strong>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Scope Key
             <input
+              className={inputClass}
               value={form.scopeKey}
               onChange={(event) => setForm((current) => ({ ...current, scopeKey: event.target.value }))}
               placeholder="library"
               required
             />
-            <small>Use lowercase letters, numbers, dash, or underscore.</small>
+            <small className="text-xs font-semibold text-[#667085]">Use lowercase letters, numbers, dash, or underscore.</small>
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Display Label
             <input
+              className={inputClass}
               value={form.label}
               onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
               placeholder="Library Website"
@@ -140,26 +150,29 @@ function ScopeManagementPage() {
             />
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Description
             <input
+              className={inputClass}
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               placeholder="Library chatbot scope"
             />
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Sort Order
             <input
+              className={inputClass}
               type="number"
               value={form.sortOrder}
               onChange={(event) => setForm((current) => ({ ...current, sortOrder: Number(event.target.value) }))}
             />
           </label>
 
-          <label className="flex items-center gap-2 text-sm font-bold text-[#3b0a57]">
+          <label className="flex items-center gap-2 text-sm font-extrabold text-[#3b0a57]">
             <input
+              className={checkboxClass}
               type="checkbox"
               checked={form.isActive}
               onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
@@ -169,7 +182,7 @@ function ScopeManagementPage() {
 
           <div className="flex flex-wrap gap-2">
             <button
-              className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] disabled:opacity-60"
+              className={primaryButtonClass}
               type="submit"
               disabled={isSaving}
             >
@@ -177,7 +190,7 @@ function ScopeManagementPage() {
             </button>
             {form.id && (
               <button
-                className="rounded-lg border border-[#5c297c]/20 px-4 py-3 font-extrabold text-[#5c297c]"
+                className={secondaryButtonClass}
                 type="button"
                 onClick={resetForm}
               >
@@ -207,14 +220,14 @@ function ScopeManagementPage() {
               </div>
               <div className="flex gap-2">
                 <button
-                  className="rounded-lg border border-[#5c297c]/20 px-3 py-2 text-sm font-bold text-[#5c297c]"
+                  className={smallButtonClass}
                   type="button"
                   onClick={() => handleEdit(scope)}
                 >
                   Edit
                 </button>
                 <button
-                  className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-600"
+                  className={dangerButtonClass}
                   type="button"
                   onClick={() => handleDelete(scope)}
                 >

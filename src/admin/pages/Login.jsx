@@ -9,6 +9,10 @@ const MICROSOFT_AUTH_PATH = import.meta.env.VITE_MICROSOFT_AUTH_PATH || '/api/au
 const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || ''
 const MICROSOFT_AUTHORITY = import.meta.env.VITE_MICROSOFT_AUTHORITY || 'https://login.microsoftonline.com/common'
 const MICROSOFT_REDIRECT_URI = import.meta.env.VITE_MICROSOFT_REDIRECT_URI || `${window.location.origin}/`
+const loginLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
+const loginInputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
+const loginPrimaryButtonClass = 'min-h-11 w-full rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+const microsoftButtonClass = 'flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 font-extrabold text-[#241433] transition hover:bg-[#faf7ff] disabled:cursor-not-allowed disabled:opacity-60'
 
 function getMicrosoftAuthUrl() {
   return new URL(MICROSOFT_AUTH_PATH, API_BASE_URL).toString()
@@ -173,18 +177,20 @@ function Login() {
         </div>
 
         <form className="stack-form" onSubmit={handleSubmit}>
-          <label>
+          <label className={loginLabelClass}>
             Email
             <input
+              className={loginInputClass}
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="username" placeholder="Email @mcu.edu.ph"
             />
           </label>
-          <label>
+          <label className={loginLabelClass}>
             Password
             <input
+              className={loginInputClass}
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -195,7 +201,7 @@ function Login() {
           {error && <p className="form-error">{error}</p>}
           {authMessage && <p className="form-note">{authMessage}</p>}
 
-          <button type="submit" disabled={isSigningIn}>
+          <button className={loginPrimaryButtonClass} type="submit" disabled={isSigningIn}>
             {isSigningIn ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
@@ -204,7 +210,7 @@ function Login() {
           <span>or</span>
         </div>
 
-        <button className="ms365-button" type="button" onClick={handleMicrosoftSignIn} disabled={isSigningIn || !isMicrosoftReady}>
+        <button className={microsoftButtonClass} type="button" onClick={handleMicrosoftSignIn} disabled={isSigningIn || !isMicrosoftReady}>
           <span className="microsoft-mark" aria-hidden="true">
             <span></span>
             <span></span>

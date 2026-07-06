@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Swal from 'sweetalert2'
+import { fetchEmbedOrigins } from '../services/embedOriginService'
 import { fallbackScopeOptions, fetchScopeOptions } from '../services/scopeService'
 
 const positionOptions = [
@@ -15,36 +16,64 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
+const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
+const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+
 function EmbedGeneratorPage() {
   const [scope, setScope] = useState('general')
   const [scopeOptions, setScopeOptions] = useState(fallbackScopeOptions)
+  const [websiteOptions, setWebsiteOptions] = useState([])
+  const [websiteId, setWebsiteId] = useState('')
   const [position, setPosition] = useState('right')
   const [baseUrl, setBaseUrl] = useState(window.location.origin)
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
       try {
-        setScopeOptions(await fetchScopeOptions())
+        const [scopes, websites] = await Promise.all([
+          fetchScopeOptions(),
+          fetchEmbedOrigins(),
+        ])
+        setScopeOptions(scopes)
+        setWebsiteOptions(websites.origins || [])
       } catch {
         setScopeOptions(fallbackScopeOptions)
+        setWebsiteOptions([])
       }
     }, 0)
 
     return () => window.clearTimeout(timer)
   }, [])
 
+  const scopedWebsiteOptions = useMemo(
+    () => websiteOptions.filter((website) => website.siteScope === scope && website.isActive),
+    [scope, websiteOptions],
+  )
+  const effectiveWebsiteId = scopedWebsiteOptions.some((website) => String(website.id) === String(websiteId))
+    ? websiteId
+    : String(scopedWebsiteOptions[0]?.id || '')
+  const selectedWebsite = useMemo(
+    () => scopedWebsiteOptions.find((website) => String(website.id) === String(effectiveWebsiteId)),
+    [effectiveWebsiteId, scopedWebsiteOptions],
+  )
+
   const embedCode = useMemo(() => {
     const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
     const chatbotUrl = `${normalizedBaseUrl}/chatbot?embed=1&compact=1&scope=${encodeURIComponent(scope)}`
+    const tokenLine = selectedWebsite?.embedToken
+      ? [`  data-embed-token="${selectedWebsite.embedToken}"`]
+      : []
 
     return [
       '<script',
       `  src="${normalizedBaseUrl}/mcu-chatbot-widget.js"`,
       `  data-chatbot-url="${chatbotUrl}"`,
+      ...tokenLine,
       `  data-position="${position}">`,
       '</script>'
     ].join('\n')
-  }, [baseUrl, position, scope])
+  }, [baseUrl, position, scope, selectedWebsite])
 
   async function handleCopy() {
     try {
@@ -72,7 +101,7 @@ function EmbedGeneratorPage() {
           </p>
         </div>
         <button
-          className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]"
+          className={primaryButtonClass}
           type="button"
           onClick={handleCopy}
         >
@@ -82,9 +111,10 @@ function EmbedGeneratorPage() {
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
         <section className="grid gap-4 rounded-xl border border-[#5c297c]/10 bg-[#faf7ff] p-4">
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Chatbot URL / Domain
             <input
+              className={inputClass}
               type="url"
               value={baseUrl}
               onChange={(event) => setBaseUrl(event.target.value)}
@@ -92,18 +122,42 @@ function EmbedGeneratorPage() {
             />
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Target Website / Scope
-            <select value={scope} onChange={(event) => setScope(event.target.value)}>
+            <select
+              className={inputClass}
+              value={scope}
+              onChange={(event) => {
+                setScope(event.target.value)
+                setWebsiteId('')
+              }}
+            >
               {scopeOptions.map((option) => (
                 <option value={option.value} key={option.value}>{option.label}</option>
               ))}
             </select>
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
+            Allowed Website
+            <select className={inputClass} value={effectiveWebsiteId} onChange={(event) => setWebsiteId(event.target.value)}>
+              {scopedWebsiteOptions.length === 0 && (
+                <option value="">No active website for this scope</option>
+              )}
+              {scopedWebsiteOptions.map((website) => (
+                <option value={website.id} key={website.id}>
+                  {website.label || website.origin}
+                </option>
+              ))}
+            </select>
+            <small className="text-xs font-semibold text-[#667085]">
+              The generated code includes the token for this website.
+            </small>
+          </label>
+
+          <label className={fieldLabelClass}>
             Widget Position
-            <select value={position} onChange={(event) => setPosition(event.target.value)}>
+            <select className={inputClass} value={position} onChange={(event) => setPosition(event.target.value)}>
               {positionOptions.map((option) => (
                 <option value={option.value} key={option.value}>{option.label}</option>
               ))}

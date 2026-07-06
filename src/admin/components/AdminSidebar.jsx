@@ -7,6 +7,7 @@ function AdminSidebar({ activeView, onViewChange, onLogout }) {
       title: 'Admin',
       items: [
         { label: 'Documents', view: 'documents', icon: 'D' },
+        { label: 'Announcements', view: 'announcements', icon: 'A' },
         {
           label: 'Embed Generator',
           icon: 'E',

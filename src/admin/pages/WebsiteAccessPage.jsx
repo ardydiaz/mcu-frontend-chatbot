@@ -4,6 +4,7 @@ import {
   createEmbedOrigin,
   deleteEmbedOrigin,
   fetchEmbedOrigins,
+  regenerateEmbedOriginToken,
   updateEmbedOrigin,
 } from '../services/embedOriginService'
 import { fallbackScopeOptions, fetchScopeOptions } from '../services/scopeService'
@@ -23,6 +24,15 @@ const toast = Swal.mixin({
   timer: 2200,
   timerProgressBar: true,
 })
+
+const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
+const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
+const checkboxClass = 'h-4 w-4 rounded border-[#d9d3e4] accent-[#5c297c]'
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+const secondaryButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-3 font-extrabold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+const smallButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+const dangerButtonClass = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50'
+const tokenButtonClass = 'rounded-lg border border-[#f0a733]/30 bg-white px-3 py-2 text-xs font-extrabold text-[#7a4a00] transition hover:bg-[#fff4cf]'
 
 function getOriginHelpText(origin) {
   if (!origin.trim()) {
@@ -136,6 +146,40 @@ function WebsiteAccessPage() {
     }
   }
 
+  async function handleCopyToken(embedToken) {
+    try {
+      await navigator.clipboard.writeText(embedToken)
+      toast.fire({ icon: 'success', title: 'Embed token copied.' })
+    } catch {
+      toast.fire({ icon: 'error', title: 'Unable to copy token.' })
+    }
+  }
+
+  async function handleRegenerateToken(origin) {
+    const result = await Swal.fire({
+      title: 'Regenerate embed token?',
+      text: 'Old copied widget codes for this website will stop working.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Regenerate',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#5c297c',
+    })
+
+    if (!result.isConfirmed) {
+      return
+    }
+
+    try {
+      const data = await regenerateEmbedOriginToken(origin.id)
+      await loadOrigins()
+      await navigator.clipboard.writeText(data.origin.embedToken)
+      toast.fire({ icon: 'success', title: 'New token copied.' })
+    } catch (requestError) {
+      toast.fire({ icon: 'error', title: requestError.message || 'Unable to regenerate token.' })
+    }
+  }
+
   return (
     <article className="rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -157,18 +201,20 @@ function WebsiteAccessPage() {
             </p>
           </div>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Display Name
             <input
+              className={inputClass}
               value={form.label}
               onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
               placeholder="Post-Class Survey"
             />
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Scope
             <select
+              className={inputClass}
               value={form.siteScope}
               onChange={(event) => setForm((current) => ({ ...current, siteScope: event.target.value }))}
             >
@@ -178,20 +224,22 @@ function WebsiteAccessPage() {
             </select>
           </label>
 
-          <label className="upload-field">
+          <label className={fieldLabelClass}>
             Website URL
             <input
+              className={inputClass}
               type="url"
               value={form.origin}
               onChange={(event) => setForm((current) => ({ ...current, origin: event.target.value }))}
               placeholder="https://queue.mcu.edu.ph"
               required
             />
-            <small>{getOriginHelpText(form.origin)}</small>
+            <small className="text-xs font-semibold text-[#667085]">{getOriginHelpText(form.origin)}</small>
           </label>
 
-          <label className="flex items-center gap-2 text-sm font-bold text-[#3b0a57]">
+          <label className="flex items-center gap-2 text-sm font-extrabold text-[#3b0a57]">
             <input
+              className={checkboxClass}
               type="checkbox"
               checked={form.isActive}
               onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
@@ -201,7 +249,7 @@ function WebsiteAccessPage() {
 
           <div className="flex flex-wrap gap-2">
             <button
-              className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] disabled:opacity-60"
+              className={primaryButtonClass}
               type="submit"
               disabled={isSaving}
             >
@@ -209,7 +257,7 @@ function WebsiteAccessPage() {
             </button>
             {form.id && (
               <button
-                className="rounded-lg border border-[#5c297c]/20 px-4 py-3 font-extrabold text-[#5c297c]"
+                className={secondaryButtonClass}
                 type="button"
                 onClick={resetForm}
               >
@@ -249,6 +297,9 @@ function WebsiteAccessPage() {
                       <div>
                         <strong className="block text-sm text-[#241433]">{origin.label || origin.origin}</strong>
                         <span className="block break-all text-sm text-[#667085]">{origin.origin}</span>
+                        <code className="mt-2 block max-w-xl break-all rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#5c297c]">
+                          {origin.embedToken || 'No token yet'}
+                        </code>
                         <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold ${
                           origin.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
                         }`}>
@@ -258,14 +309,30 @@ function WebsiteAccessPage() {
 
                       <div className="flex gap-2">
                         <button
-                          className="rounded-lg border border-[#5c297c]/20 px-3 py-2 text-sm font-bold text-[#5c297c]"
+                          className={smallButtonClass}
                           type="button"
                           onClick={() => handleEdit(origin)}
                         >
                           Edit
                         </button>
+                        {origin.embedToken && (
+                          <button
+                            className={tokenButtonClass}
+                            type="button"
+                            onClick={() => handleCopyToken(origin.embedToken)}
+                          >
+                            Copy Token
+                          </button>
+                        )}
                         <button
-                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-600"
+                          className={tokenButtonClass}
+                          type="button"
+                          onClick={() => handleRegenerateToken(origin)}
+                        >
+                          Regenerate
+                        </button>
+                        <button
+                          className={dangerButtonClass}
                           type="button"
                           onClick={() => handleDelete(origin)}
                         >

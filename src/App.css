@@ -2124,12 +2124,56 @@ h6 {
 }
 
 .mcu-kb-composer input {
+  width: 100%;
   min-width: 0;
   border: 1px solid #d0d9e5;
   border-radius: 12px;
   padding: 13px 14px;
   color: #101828;
   outline: none;
+}
+
+.mcu-kb-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.mcu-smart-suggestions {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 80;
+  display: grid;
+  gap: 4px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid rgba(92, 41, 124, 0.14);
+  border-radius: 14px;
+  padding: 6px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(16, 24, 40, 0.18);
+}
+
+.mcu-kb-composer .mcu-smart-suggestions button {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #241433;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mcu-kb-composer .mcu-smart-suggestions button:hover,
+.mcu-kb-composer .mcu-smart-suggestions button.active {
+  color: #2a003f;
+  background: #fff4cf;
 }
 
 .mcu-kb-composer input:focus {
@@ -2309,6 +2353,16 @@ h6 {
   border-radius: 999px;
 }
 
+.mcu-kb-shell.is-compact-embed .mcu-smart-suggestions {
+  max-height: 180px;
+  border-radius: 12px;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer .mcu-smart-suggestions button {
+  padding: 9px 10px;
+  font-size: 0.84rem;
+}
+
 .mcu-kb-shell.is-compact-embed .mcu-kb-composer button {
   position: static;
   display: flex;
@@ -2334,6 +2388,51 @@ h6 {
   font-weight: 900;
   line-height: 1;
   transform: none;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer .mcu-smart-suggestions {
+  right: -48px;
+  bottom: calc(100% + 10px);
+  left: 0;
+  display: grid;
+  gap: 4px;
+  max-height: 156px;
+  overflow: auto;
+  border: 1px solid rgba(92, 41, 124, 0.14);
+  border-radius: 14px;
+  padding: 6px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(16, 24, 40, 0.18);
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer .mcu-smart-suggestions button {
+  position: relative;
+  display: block;
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 10px;
+  overflow: visible;
+  color: #241433;
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: left;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer .mcu-smart-suggestions button::before {
+  content: none;
+}
+
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer .mcu-smart-suggestions button:hover,
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer .mcu-smart-suggestions button.active {
+  color: #2a003f;
+  background: #fff4cf;
 }
 
 .mcu-kb-insights section {

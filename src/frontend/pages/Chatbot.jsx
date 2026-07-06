@@ -57,6 +57,17 @@ const initialThreads = [
   },
 ]
 
+const smartSuggestionPrompts = [
+  'What are the enrollment requirements?',
+  'What are the tuition fees?',
+  'What are the graduation requirements?',
+  'How do I access the student portal?',
+  'How do I pay my tuition fee?',
+  'Can you show me the source page?',
+  'Do you have images for this topic?',
+  'Tell me about enrollment process.',
+]
+
 function getCurrentTime() {
   return new Date().toLocaleTimeString([], {
     hour: 'numeric',
@@ -134,17 +145,60 @@ function buildRecentConversations(chatThreads) {
   return []
 }
 
+function normalizeSuggestionText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function buildSmartSuggestions(inputValue, knowledgeTopics) {
+  const normalizedInput = normalizeSuggestionText(inputValue)
+
+  if (normalizedInput.length < 3) {
+    return []
+  }
+
+  const topicPrompts = knowledgeTopics.flatMap((group) =>
+    group.items?.flatMap((item) => [item.prompt, `Tell me about ${item.label}.`]) || [],
+  )
+  const suggestions = [...smartSuggestionPrompts, ...topicPrompts]
+    .filter(Boolean)
+    .filter((suggestion, index, allSuggestions) => allSuggestions.indexOf(suggestion) === index)
+
+  return suggestions
+    .map((suggestion) => {
+      const normalizedSuggestion = normalizeSuggestionText(suggestion)
+      const inputTerms = normalizedInput.split(' ').filter(Boolean)
+      const matchedTerms = inputTerms.filter((term) => normalizedSuggestion.includes(term)).length
+      const startsWithInput = normalizedSuggestion.startsWith(normalizedInput)
+
+      return {
+        text: suggestion,
+        score: (startsWithInput ? 20 : 0) + matchedTerms,
+      }
+    })
+    .filter((suggestion) => suggestion.score > 0)
+    .sort((a, b) => b.score - a.score || a.text.length - b.text.length)
+    .slice(0, 5)
+    .map((suggestion) => suggestion.text)
+}
+
 function Chatbot() {
   const [searchParams] = useSearchParams()
   const isEmbedMode = searchParams.get('embed') === '1'
   const isCompactEmbedMode = isEmbedMode && searchParams.get('compact') === '1'
   const siteScope = searchParams.get('scope') || 'general'
   const explicitEmbedOrigin = searchParams.get('embedOrigin')
+  const embedToken = searchParams.get('embedToken') || ''
   const embedOrigin = useMemo(
     () => getEmbedOrigin(isEmbedMode, explicitEmbedOrigin),
     [explicitEmbedOrigin, isEmbedMode],
   )
   const [message, setMessage] = useState('')
+  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [knowledgeTopics, setKnowledgeTopics] = useState(topicGroups)
   const [chatThreads, setChatThreads] = useState(initialThreads)
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
@@ -160,6 +214,11 @@ function Chatbot() {
     [activeThreadId, chatThreads],
   )
   const recentConversations = buildRecentConversations(chatThreads)
+  const smartSuggestions = useMemo(
+    () => buildSmartSuggestions(message, knowledgeTopics),
+    [knowledgeTopics, message],
+  )
+  const visibleSmartSuggestions = isCompactEmbedMode ? smartSuggestions.slice(0, 3) : smartSuggestions
 
   useEffect(() => {
     return () => {
@@ -174,7 +233,7 @@ function Chatbot() {
 
     async function loadTopics() {
       try {
-        const data = await fetchChatbotTopics(siteScope, embedOrigin)
+        const data = await fetchChatbotTopics(siteScope, embedOrigin, embedToken, isEmbedMode)
         const uploadedTopicGroups = data.topicGroups?.filter((group) => group.items?.length) || []
 
         if (isMounted && uploadedTopicGroups.length > 0) {
@@ -196,7 +255,7 @@ function Chatbot() {
     return () => {
       isMounted = false
     }
-  }, [embedOrigin, siteScope])
+  }, [embedOrigin, embedToken, isEmbedMode, siteScope])
 
   useEffect(() => {
     const stream = chatStreamRef.current
@@ -329,7 +388,7 @@ function Chatbot() {
     }
 
     try {
-      const data = await askChatbot(trimmedQuestion, siteScope, embedOrigin)
+      const data = await askChatbot(trimmedQuestion, siteScope, embedOrigin, embedToken, isEmbedMode)
       const assistantReply = buildApiAssistantReply(data)
 
       updateThread(activeThread.id, (thread) => ({
@@ -350,7 +409,45 @@ function Chatbot() {
 
   function handleSendMessage(event) {
     event.preventDefault()
+    setIsSuggestionOpen(false)
+    setActiveSuggestionIndex(-1)
     submitQuestion(message)
+  }
+
+  function handleSuggestionSelect(suggestion) {
+    setIsSuggestionOpen(false)
+    setActiveSuggestionIndex(-1)
+    submitQuestion(suggestion)
+  }
+
+  function handleComposerKeyDown(event) {
+    if (!isSuggestionOpen || visibleSmartSuggestions.length === 0) {
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setActiveSuggestionIndex((current) => (
+        current < 0 ? 0 : (current + 1) % visibleSmartSuggestions.length
+      ))
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setActiveSuggestionIndex((current) => (
+        current < 0 || current === 0 ? visibleSmartSuggestions.length - 1 : current - 1
+      ))
+    }
+
+    if (event.key === 'Enter' && activeSuggestionIndex >= 0 && visibleSmartSuggestions[activeSuggestionIndex]) {
+      event.preventDefault()
+      handleSuggestionSelect(visibleSmartSuggestions[activeSuggestionIndex])
+    }
+
+    if (event.key === 'Escape') {
+      setIsSuggestionOpen(false)
+      setActiveSuggestionIndex(-1)
+    }
   }
 
   function handleQuickAction(value) {
@@ -496,11 +593,42 @@ function Chatbot() {
           </div>
 
           <form className="mcu-kb-composer" onSubmit={handleSendMessage}>
-            <input
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Ask about enrollment, tuition, registrar, library, policies..."
-            />
+            <div className="mcu-kb-input-wrap">
+              {isSuggestionOpen && visibleSmartSuggestions.length > 0 && (
+                <div className="mcu-smart-suggestions" role="listbox" aria-label="Suggested questions">
+                  {visibleSmartSuggestions.map((suggestion, index) => (
+                    <button
+                      className={index === activeSuggestionIndex ? 'active' : ''}
+                      type="button"
+                      role="option"
+                      aria-selected={index === activeSuggestionIndex}
+                      key={suggestion}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input
+                value={message}
+                onChange={(event) => {
+                  setMessage(event.target.value)
+                  setIsSuggestionOpen(true)
+                  setActiveSuggestionIndex(-1)
+                }}
+                onFocus={() => setIsSuggestionOpen(true)}
+                onBlur={() => window.setTimeout(() => {
+                  setIsSuggestionOpen(false)
+                  setActiveSuggestionIndex(-1)
+                }, 120)}
+                onKeyDown={handleComposerKeyDown}
+                placeholder="Ask about enrollment, tuition, registrar, library, policies..."
+                aria-autocomplete="list"
+                aria-expanded={isSuggestionOpen && visibleSmartSuggestions.length > 0}
+              />
+            </div>
             <button type="submit" disabled={!message.trim() || isTyping}>Send</button>
           </form>
           </>

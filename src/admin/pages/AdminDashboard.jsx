@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminSidebar from '../components/AdminSidebar'
 import AdminTopbar from '../components/AdminTopbar'
+import AnnouncementsPage from './AnnouncementsPage'
 import ChatLogsPage from './ChatLogsPage'
 import DocumentsPage from './DocumentsPage'
 import EmbedGeneratorPage from './EmbedGeneratorPage'
@@ -44,6 +45,7 @@ function AdminDashboard() {
           {activeView === 'embedGenerator' && <EmbedGeneratorPage />}
           {activeView === 'websiteAccess' && <WebsiteAccessPage />}
           {activeView === 'scopeManagement' && <ScopeManagementPage />}
+          {activeView === 'announcements' && <AnnouncementsPage />}
           {activeView === 'chatLogs' && <ChatLogsPage />}
           {activeView === 'users' && <UsersPage />}
         </div>

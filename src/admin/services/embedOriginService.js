@@ -24,9 +24,16 @@ async function deleteEmbedOrigin(id) {
   })
 }
 
+async function regenerateEmbedOriginToken(id) {
+  return apiFetch(`/api/embed-origins/${id}/regenerate-token`, {
+    method: 'POST',
+  })
+}
+
 export {
   createEmbedOrigin,
   deleteEmbedOrigin,
   fetchEmbedOrigins,
+  regenerateEmbedOriginToken,
   updateEmbedOrigin,
 }

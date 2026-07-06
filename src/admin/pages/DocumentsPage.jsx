@@ -5,6 +5,13 @@ import { fetchDocumentDetails, fetchDocumentsFromApi, PAGE_SIZE } from '../servi
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge, TypeBadge } from '../components/Badges'
 
+const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
+const labelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
+const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
+const smallButtonClass = 'rounded-lg border border-[#f0a733]/40 bg-white px-3 py-2 text-sm font-bold text-[#7a4a00] transition hover:bg-[#fff4cf]'
+const paginationButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff] disabled:cursor-not-allowed disabled:opacity-50'
+const modalButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+
 function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 }) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -103,12 +110,12 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
         </div>
         <div className="flex gap-2">
           {compact && (
-            <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]" type="button" onClick={onViewAll}>
+            <button className={primaryButtonClass} type="button" onClick={onViewAll}>
               View All
             </button>
           )}
           {!compact && (
-            <button className="rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)]" type="button" onClick={onUpload}>
+            <button className={primaryButtonClass} type="button" onClick={onUpload}>
               Upload Document
             </button>
           )}
@@ -116,27 +123,27 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
       </div>
 
       {!compact && (
-        <div className="datatable-toolbar bootstrap-datatable-toolbar">
-          <label className="form-label">
+        <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-end">
+          <label className={labelClass}>
             Search
             <input
-              className="form-control"
+              className={inputClass}
               type="search"
               value={search}
               onChange={handleSearchChange}
               placeholder="Search document, owner, ID, or type"
             />
           </label>
-          <label className="form-label">
+          <label className={labelClass}>
             Status
-            <select className="form-select" value={status} onChange={handleStatusChange}>
+            <select className={inputClass} value={status} onChange={handleStatusChange}>
               <option>All</option>
               <option>Published</option>
               <option>Review</option>
               <option>Draft</option>
             </select>
           </label>
-          <div className="server-badge">Server-side list</div>
+          <div className="rounded-full bg-[#efe8f7] px-3 py-2 text-center text-xs font-extrabold text-[#5c297c]">Server-side list</div>
         </div>
       )}
 
@@ -155,7 +162,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
             headerClassName: 'text-end',
             className: 'text-end',
             render: (document) => (
-              <button className="btn btn-sm btn-outline-warning" type="button" onClick={() => handleViewDocument(document)}>
+              <button className={smallButtonClass} type="button" onClick={() => handleViewDocument(document)}>
                 View
               </button>
             ),
@@ -173,7 +180,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
           <nav aria-label="Document table pagination">
             <ul className="pagination pagination-sm mb-0">
               <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
-                <button className="page-link" type="button" onClick={() => setPage(page - 1)}>
+                <button className={paginationButtonClass} type="button" disabled={page === 1} onClick={() => setPage(page - 1)}>
                   Previous
                 </button>
               </li>
@@ -183,7 +190,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
                 </span>
               </li>
               <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
-                <button className="page-link" type="button" onClick={() => setPage(page + 1)}>
+                <button className={paginationButtonClass} type="button" disabled={page === totalPages} onClick={() => setPage(page + 1)}>
                   Next
                 </button>
               </li>
@@ -206,7 +213,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
                 <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Document Preview</p>
                 <h3>{selectedDocument?.title || 'Loading document'}</h3>
               </div>
-              <button type="button" onClick={closeDetailsModal}>Close</button>
+              <button className={modalButtonClass} type="button" onClick={closeDetailsModal}>Close</button>
             </header>
 
             {isDetailsLoading && <p className="form-note">Loading document details...</p>}
