@@ -49,4 +49,13 @@ async function updateUserApproval(userId, approvalStatus) {
   return mapUser(data.user)
 }
 
-export { fetchUsers, updateUserApproval }
+async function setUserPassword(userId, password) {
+  const data = await apiFetch('/api/users/password', {
+    method: 'PATCH',
+    body: { userId, password },
+  })
+
+  return mapUser(data.user)
+}
+
+export { fetchUsers, setUserPassword, updateUserApproval }

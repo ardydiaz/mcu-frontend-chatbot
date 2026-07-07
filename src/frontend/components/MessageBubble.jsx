@@ -30,11 +30,14 @@ function LinkedText({ text }) {
 }
 
 function isPreformattedHeading(line) {
+  const trimmedLine = String(line || '').trim()
+
   return (
-    /^[A-Z][A-Z0-9\s|&/():-]{2,}$/.test(line) ||
-    /^notes?:?$/i.test(line) ||
-    /^user guide$/i.test(line) ||
-    /\b(?:process flow|workflow|user guide|guide|procedure|steps)\b$/i.test(line)
+    /^[A-Z][A-Z0-9\s|&/():-]{2,}$/.test(trimmedLine) ||
+    /^notes?:?$/i.test(trimmedLine) ||
+    /^user guide$/i.test(trimmedLine) ||
+    /^(qualifications?|requirements?|terms\s*&\s*conditions?)$/i.test(trimmedLine) ||
+    /\b(?:process flow|workflow|user guide|guide|procedure|steps|scholarships?)\b$/i.test(trimmedLine)
   )
 }
 
@@ -42,15 +45,12 @@ function normalizeDisplayLines(text) {
   return String(text || '')
     .split(/\r?\n/)
     .flatMap((line) => {
-      const markerMatches = line.match(/\s+(?=(?:\d+|[A-Za-z]{1,4})[.)]\s+\S)/g) || []
+      const expandedLine = line
+        .replace(/\s+(?=Step\s+\d+[:.)]\s+\S)/gi, '\n')
+        .replace(/\s+(?=(?:\d+|[a-z]|[ivxlcdm]{1,6})[.)]\s+\S)/g, '\n')
+        .replace(/\s+(?=[•●▪]\s+\S)/g, '\n')
 
-      if (markerMatches.length < 2) {
-        return [line]
-      }
-
-      return line
-        .replace(/\s+(?=((?:\d+|[A-Za-z]{1,4})[.)]\s+\S))/g, '\n')
-        .split('\n')
+      return expandedLine.split('\n')
     })
 }
 
@@ -85,42 +85,28 @@ function getLineIndentLevel(line, marker) {
 }
 
 function getListMarkerMatch(line) {
-  return String(line || '').match(/^\s*((?:\d+|[A-Za-z]{1,4})[.)])\s*(.+)$/)
+  const value = String(line || '')
+
+  return (
+    value.match(/^\s*Step\s+(\d+)[:.)]\s*(.+)$/i) ||
+    value.match(/^\s*((?:\d+|[a-z]|[ivxlcdm]{1,6})[.)])\s*(.+)$/) ||
+    value.match(/^\s*([•●▪-])\s*(.+)$/)
+  )
 }
 
-function PreformattedText({ text }) {
-  const lines = normalizeDisplayLines(text)
+function PreformattedText({ text, fullText, isTruncated }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const displayText = isExpanded && fullText ? fullText : text
+  const blocks = parseMessageBlocks(displayText)
 
   return (
     <div className="message-preformatted">
-      {lines.map((line, index) => {
-        const trimmedLine = line.trim()
-        const numberedMatch = getListMarkerMatch(line)
-        const indentStyle = getIndentStyle(getLineIndentLevel(line, numberedMatch?.[1]))
-
-        if (!trimmedLine) {
-          return <div className="message-preformatted-space" key={`space-${index}`} aria-hidden="true"></div>
-        }
-
-        if (numberedMatch) {
-          return (
-            <div className="message-preformatted-numbered" key={`${line}-${index}`} style={indentStyle}>
-              <span className="message-list-marker">{numberedMatch[1].replace(/[.)]$/, '')}</span>
-              <p><LinkedText text={numberedMatch[2]} /></p>
-            </div>
-          )
-        }
-
-        if (isPreformattedHeading(trimmedLine)) {
-          return <strong className="message-heading" key={`${line}-${index}`}>{trimmedLine.replace(/:$/, '')}</strong>
-        }
-
-        return (
-          <p className="message-preformatted-line" key={`${line}-${index}`} style={indentStyle}>
-            <LinkedText text={trimmedLine} />
-          </p>
-        )
-      })}
+      <MessageBlocks blocks={blocks} />
+      {isTruncated && fullText && (
+        <button className="message-see-more" type="button" onClick={() => setIsExpanded((current) => !current)}>
+          {isExpanded ? 'See less' : 'See more'}
+        </button>
+      )}
     </div>
   )
 }
@@ -138,21 +124,26 @@ function parseMessageBlocks(text) {
   }
 
   lines.forEach((line) => {
-    const orderedMatch = line.match(/^(\d+|[A-Za-z]{1,4})[.)]\s+(.+)$/)
-    const unorderedMatch = line.match(/^[-*]\s+(.+)$/)
+    const markerMatch = getListMarkerMatch(line)
+    const marker = markerMatch?.[1] || ''
+    const lineValue = markerMatch?.[2] || ''
+    const isUnorderedMarker = /^[•●▪-]$/.test(marker)
     const headingMatch = isPreformattedHeading(line) || /^GLNet On Line Help$/i.test(line)
 
-    if (orderedMatch || unorderedMatch) {
-      const type = orderedMatch ? 'ol' : 'ul'
-      const value = orderedMatch ? orderedMatch[2] : unorderedMatch[1]
-      const marker = orderedMatch ? orderedMatch[1] : '-'
+    if (markerMatch) {
+      const type = isUnorderedMarker ? 'ul' : 'ol'
+      const cleanedMarker = isUnorderedMarker ? '-' : String(marker).replace(/[.)]$/, '')
 
       if (!currentList || currentList.type !== type) {
         flushList()
         currentList = { type, items: [] }
       }
 
-      currentList.items.push({ marker, value, indentLevel: getMarkerIndentLevel(marker) })
+      currentList.items.push({
+        marker: cleanedMarker,
+        value: lineValue,
+        indentLevel: getLineIndentLevel(line, cleanedMarker),
+      })
       return
     }
 
@@ -203,7 +194,14 @@ function MessageBlocks({ blocks }) {
         }
 
         if (block.type === 'preformatted') {
-          return <PreformattedText text={block.text} key={`preformatted-${index}`} />
+          return (
+            <PreformattedText
+              text={block.text}
+              fullText={block.fullText}
+              isTruncated={block.isTruncated}
+              key={`preformatted-${index}`}
+            />
+          )
         }
 
         return (

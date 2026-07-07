@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge } from '../components/Badges'
-import { fetchUsers, updateUserApproval } from '../services/userService'
+import { fetchUsers, setUserPassword, updateUserApproval } from '../services/userService'
 
 const toast = Swal.mixin({
   toast: true,
@@ -15,6 +15,7 @@ const toast = Swal.mixin({
 const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
 const approveButtonClass = 'rounded-lg border border-green-200 bg-white px-3 py-2 text-sm font-bold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50'
 const rejectButtonClass = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50'
+const passwordButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff] disabled:cursor-not-allowed disabled:opacity-50'
 
 function UsersPage() {
   const [users, setUsers] = useState([])
@@ -106,6 +107,55 @@ function UsersPage() {
     }
   }
 
+  async function handleSetPassword(user) {
+    const result = await Swal.fire({
+      title: `Set password for ${user.name}`,
+      input: 'password',
+      inputLabel: 'New password',
+      inputPlaceholder: 'Minimum 8 characters',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocomplete: 'new-password',
+        minlength: '8',
+      },
+      showCancelButton: true,
+      confirmButtonColor: '#5c297c',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Save password',
+      preConfirm: (value) => {
+        if (!value || value.length < 8) {
+          Swal.showValidationMessage('Password must be at least 8 characters.')
+          return false
+        }
+
+        return value
+      },
+    })
+
+    if (!result.isConfirmed) {
+      return
+    }
+
+    setUpdatingUserId(user.id)
+    setError('')
+    setMessage('')
+
+    try {
+      const updatedUser = await setUserPassword(user.id, result.value)
+      setUsers((currentUsers) =>
+        currentUsers.map((currentUser) => (currentUser.id === updatedUser.id ? updatedUser : currentUser)),
+      )
+      setMessage('Password was set successfully.')
+      toast.fire({ icon: 'success', title: 'Password was set successfully.' })
+    } catch (requestError) {
+      const errorMessage = requestError.message || 'Unable to set password.'
+      setError(errorMessage)
+      toast.fire({ icon: 'error', title: errorMessage })
+    } finally {
+      setUpdatingUserId(null)
+    }
+  }
+
   return (
     <article className="rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)] xl:col-span-full">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -150,6 +200,14 @@ function UsersPage() {
                   onClick={() => handleApprovalChange(user.id, 'rejected')}
                 >
                   {updatingUserId === user.id ? 'Saving...' : 'Reject'}
+                </button>
+                <button
+                  className={passwordButtonClass}
+                  type="button"
+                  disabled={updatingUserId === user.id || user.status !== 'approved'}
+                  onClick={() => handleSetPassword(user)}
+                >
+                  Password
                 </button>
               </div>
             ),

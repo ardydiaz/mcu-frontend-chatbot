@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminSidebar from '../components/AdminSidebar'
 import AdminTopbar from '../components/AdminTopbar'
-import AnnouncementsPage from './AnnouncementsPage'
 import ChatLogsPage from './ChatLogsPage'
 import DocumentsPage from './DocumentsPage'
 import EmbedGeneratorPage from './EmbedGeneratorPage'
@@ -10,6 +9,7 @@ import ScopeManagementPage from './ScopeManagementPage'
 import UploadDocumentPage from './UploadDocumentPage'
 import UsersPage from './UsersPage'
 import WebsiteAccessPage from './WebsiteAccessPage'
+import WebsiteImportPage from './WebsiteImportPage'
 import { logout } from '../../services/authService'
 
 function AdminDashboard() {
@@ -45,7 +45,7 @@ function AdminDashboard() {
           {activeView === 'embedGenerator' && <EmbedGeneratorPage />}
           {activeView === 'websiteAccess' && <WebsiteAccessPage />}
           {activeView === 'scopeManagement' && <ScopeManagementPage />}
-          {activeView === 'announcements' && <AnnouncementsPage />}
+          {activeView === 'websiteImport' && <WebsiteImportPage />}
           {activeView === 'chatLogs' && <ChatLogsPage />}
           {activeView === 'users' && <UsersPage />}
         </div>

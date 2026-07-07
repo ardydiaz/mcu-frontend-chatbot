@@ -3,42 +3,6 @@ import { useSearchParams } from 'react-router-dom'
 import MessageBubble from '../components/MessageBubble'
 import { askChatbot, fetchChatbotTopics } from '../services/chatService'
 
-const topicGroups = [
-  {
-    label: 'Academics',
-    items: [
-      { icon: 'A', label: 'Academic Programs', prompt: 'Tell me about academic programs.' },
-      { icon: 'C', label: 'Academic Calendar', prompt: 'What is the academic calendar?' },
-    ],
-  },
-  {
-    label: 'Services',
-    items: [
-      { icon: 'L', label: 'Library Hours', prompt: 'What are the library hours?' },
-      { icon: 'M', label: 'Campus Map', prompt: 'Where can I find the campus map?' },
-      { icon: 'H', label: 'Housing', prompt: 'Tell me about housing services.' },
-    ],
-  },
-  {
-    label: 'Student Life',
-    items: [
-      { icon: 'S', label: 'Student Organizations', prompt: 'Tell me about student organizations.' },
-    ],
-  },
-  {
-    label: 'Finance',
-    items: [
-      { icon: '$', label: 'Tuition & Fees', prompt: 'Where can I find tuition and fees information?' },
-    ],
-  },
-  {
-    label: 'Admissions',
-    items: [
-      { icon: '?', label: 'Admissions', prompt: 'What admissions information should I know?' },
-    ],
-  },
-]
-
 const initialThreads = [
   {
     id: 'welcome',
@@ -130,6 +94,7 @@ function buildRecentConversations(chatThreads) {
         return {
           id: `${thread.id}-${index}`,
           threadId: thread.id,
+          messageIndex: index,
           title: getMessagePreview(messageItem.text),
           preview: getMessagePreview(nextAssistantMessage?.text || thread.topic),
           sortTime: messageItem.createdAt || thread.lastActivityAt || 0,
@@ -199,12 +164,14 @@ function Chatbot() {
   const [message, setMessage] = useState('')
   const [isSuggestionOpen, setIsSuggestionOpen] = useState(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
-  const [knowledgeTopics, setKnowledgeTopics] = useState(topicGroups)
+  const [knowledgeTopics, setKnowledgeTopics] = useState([])
   const [chatThreads, setChatThreads] = useState(initialThreads)
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
+  const [highlightedMessageKey, setHighlightedMessageKey] = useState('')
   const [isEmbedAuthorized, setIsEmbedAuthorized] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef(null)
+  const highlightTimerRef = useRef(null)
   const bottomRef = useRef(null)
   const chatStreamRef = useRef(null)
   const activityCounterRef = useRef(initialThreads.length)
@@ -225,6 +192,10 @@ function Chatbot() {
       if (typingTimerRef.current) {
         clearTimeout(typingTimerRef.current)
       }
+
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current)
+      }
     }
   }, [])
 
@@ -236,7 +207,7 @@ function Chatbot() {
         const data = await fetchChatbotTopics(siteScope, embedOrigin, embedToken, isEmbedMode)
         const uploadedTopicGroups = data.topicGroups?.filter((group) => group.items?.length) || []
 
-        if (isMounted && uploadedTopicGroups.length > 0) {
+        if (isMounted) {
           setKnowledgeTopics(uploadedTopicGroups)
         }
       } catch (error) {
@@ -244,7 +215,7 @@ function Chatbot() {
           if (String(error.message || '').toLowerCase().includes('not authorized')) {
             setIsEmbedAuthorized(false)
           } else {
-            setKnowledgeTopics(topicGroups)
+            setKnowledgeTopics([])
           }
         }
       }
@@ -315,6 +286,17 @@ function Chatbot() {
       time: getCurrentTime(),
       source: extraSourceCount > 0 ? `${sourceText}; +${extraSourceCount} more` : sourceText,
     }
+  }
+
+  function buildConversationContext(thread) {
+    return (thread?.messages || [])
+      .filter((messageItem) => ['user', 'assistant'].includes(messageItem.role))
+      .filter((messageItem) => messageItem.text && !/^ðŸŽ“?\s*Welcome/i.test(messageItem.text))
+      .slice(-6)
+      .map((messageItem) => ({
+        role: messageItem.role,
+        text: messageItem.text,
+      }))
   }
 
   function getLatestSourceMessage() {
@@ -388,7 +370,15 @@ function Chatbot() {
     }
 
     try {
-      const data = await askChatbot(trimmedQuestion, siteScope, embedOrigin, embedToken, isEmbedMode)
+      const conversationContext = buildConversationContext(activeThread)
+      const data = await askChatbot(
+        trimmedQuestion,
+        siteScope,
+        embedOrigin,
+        embedToken,
+        isEmbedMode,
+        conversationContext,
+      )
       const assistantReply = buildApiAssistantReply(data)
 
       updateThread(activeThread.id, (thread) => ({
@@ -461,6 +451,34 @@ function Chatbot() {
     setMessage('')
   }
 
+  function scrollToThreadMessage(threadId, messageIndex) {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById(`chat-message-${threadId}-${messageIndex}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    })
+  }
+
+  function handleRecentConversationSelect(conversation) {
+    const messageKey = `${conversation.threadId}-${conversation.messageIndex}`
+
+    handleThreadSelect(conversation.threadId)
+    setHighlightedMessageKey(messageKey)
+
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current)
+    }
+
+    highlightTimerRef.current = window.setTimeout(() => {
+      setHighlightedMessageKey('')
+      highlightTimerRef.current = null
+    }, 2200)
+
+    scrollToThreadMessage(conversation.threadId, conversation.messageIndex)
+  }
+
   function handleNewChat() {
     const createdAt = getNextActivityOrder()
     const id = `chat-${createdAt}`
@@ -514,6 +532,11 @@ function Chatbot() {
             <span>{knowledgeTopics.reduce((total, group) => total + group.items.length, 0)} guides</span>
           </div>
           <div className="mcu-kb-topic-list">
+            {knowledgeTopics.length === 0 && (
+              <div className="mcu-kb-empty-topics">
+                No uploaded topics are available for this scope yet.
+              </div>
+            )}
             {knowledgeTopics.map((group) => (
               <section key={group.label}>
                 <h2>{group.label}</h2>
@@ -571,7 +594,13 @@ function Chatbot() {
 
           <div className="mcu-kb-stream" ref={chatStreamRef}>
             {activeThread.messages.map((messageItem, index) => (
-              <MessageBubble message={messageItem} key={`${messageItem.author}-${messageItem.time}-${index}`} />
+              <div
+                className={highlightedMessageKey === `${activeThread.id}-${index}` ? 'chat-message-jump-highlight' : undefined}
+                id={`chat-message-${activeThread.id}-${index}`}
+                key={`${messageItem.author}-${messageItem.time}-${index}`}
+              >
+                <MessageBubble message={messageItem} />
+              </div>
             ))}
             {isTyping && (
               <div className="typing-row" aria-live="polite">
@@ -652,7 +681,7 @@ function Chatbot() {
                 className={conversation.threadId === activeThread.id ? 'active' : ''}
                 type="button"
                 key={conversation.id}
-                onClick={() => handleThreadSelect(conversation.threadId)}
+                onClick={() => handleRecentConversationSelect(conversation)}
               >
                 <strong>{conversation.title}</strong>
                 <span>{conversation.preview}</span>

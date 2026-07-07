@@ -1,10 +1,17 @@
 import apiFetch from '../../services/apiClient'
 
-async function askChatbot(message, scope = 'general', embedOrigin = window.location.origin, embedToken = '', isEmbed = false) {
+async function askChatbot(
+  message,
+  scope = 'general',
+  embedOrigin = window.location.origin,
+  embedToken = '',
+  isEmbed = false,
+  conversationContext = [],
+) {
   return apiFetch('/api/chat/ask', {
     method: 'POST',
     auth: false,
-    body: { message, scope, embedOrigin, embedToken, isEmbed },
+    body: { message, scope, embedOrigin, embedToken, isEmbed, conversationContext },
   })
 }
 
