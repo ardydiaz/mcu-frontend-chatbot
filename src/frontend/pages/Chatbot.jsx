@@ -523,6 +523,7 @@ function Chatbot() {
                 }, 120)}
                 onKeyDown={handleComposerKeyDown}
                 placeholder="Start typing your question..."
+                maxLength={2000}
                 aria-autocomplete="list"
                 aria-expanded={isSuggestionOpen && visibleSmartSuggestions.length > 0}
               />
