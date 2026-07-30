@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { API_BASE_URL } from '../../services/apiClient'
+import mcuLogoCircle from '../../assets/mcu-logo-circle.png'
 
 function buildImageUrl(url) {
   return new URL(url, API_BASE_URL).toString()
@@ -218,10 +219,13 @@ function MessageBubble({ message }) {
   const [activeImage, setActiveImage] = useState(null)
   const images = message.images || []
   const shouldShowImages = message.showImages && images.length > 0
+  const isAssistant = message.role === 'assistant'
 
   return (
     <article className={`message ${message.role}`}>
-      <div className="avatar">{message.role === 'assistant' ? 'M' : 'S'}</div>
+      <div className="avatar">
+        {isAssistant ? <img src={mcuLogoCircle} alt="" /> : 'S'}
+      </div>
       <div className="bubble">
         <div className="message-meta">
           <strong>{message.author}</strong>
@@ -260,3 +264,4 @@ function MessageBubble({ message }) {
 }
 
 export default MessageBubble
+

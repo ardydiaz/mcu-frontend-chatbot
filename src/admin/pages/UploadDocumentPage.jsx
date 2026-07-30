@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
 import { uploadDocument } from '../services/documentService'
 import { fallbackScopeOptions, fetchScopeOptions } from '../services/scopeService'
+import { fieldLabelClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../ui/classes'
 
 const allowedExtensions = ['pdf', 'doc', 'docx', 'txt']
 const allowedAcceptTypes = '.pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain'
@@ -13,10 +14,6 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
-const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
-const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
-const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
-const secondaryButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-3 font-extrabold text-[#5c297c] transition hover:bg-[#f7f0ff]'
 
 function formatFileSize(size) {
   if (!size) {
@@ -147,7 +144,7 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
     <article className={`upload-console ${isModal ? 'upload-console-modal' : 'xl:col-span-full'}`}>
       <div className="upload-console-head">
         <div>
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Document Intake</p>
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#FFBA2E]">Document Intake</p>
           <h3>Upload Document</h3>
         </div>
         <div className="upload-head-actions">
@@ -245,3 +242,5 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
 }
 
 export default UploadDocumentPage
+
+

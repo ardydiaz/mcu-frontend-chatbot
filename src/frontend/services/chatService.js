@@ -29,3 +29,4 @@ async function fetchChatbotTopics(scope = 'general', embedOrigin = window.locati
 }
 
 export { askChatbot, fetchChatbotTopics }
+

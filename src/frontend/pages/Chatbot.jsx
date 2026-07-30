@@ -1,154 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import mcuMainLogo from '../../assets/mcu-main-logo.png'
+import mcuLogoCircle from '../../assets/mcu-logo-circle.png'
 import MessageBubble from '../components/MessageBubble'
 import { askChatbot, fetchChatbotTopics } from '../services/chatService'
-
-const initialThreads = [
-  {
-    id: 'welcome',
-    title: 'New conversation',
-    topic: 'General',
-    updatedAt: 'Just now',
-    messages: [
-      {
-        author: 'MCU Guide',
-        role: 'assistant',
-        text: '🎓 Welcome to the MCU Knowledge Assistant!',
-        time: getCurrentTime(),
-        source: 'MCU Knowledge Base',
-      },
-    ],
-  },
-]
-
-const smartSuggestionPrompts = [
-  'What are the enrollment requirements?',
-  'What are the tuition fees?',
-  'What are the graduation requirements?',
-  'How do I access the student portal?',
-  'How do I pay my tuition fee?',
-  'Can you show me the source page?',
-  'Do you have images for this topic?',
-  'Tell me about enrollment process.',
-]
-
-function getCurrentTime() {
-  return new Date().toLocaleTimeString([], {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
-
-function getMessagePreview(text) {
-  const normalized = String(text || '').replace(/\s+/g, ' ').trim()
-  return normalized.length > 54 ? `${normalized.slice(0, 54)}...` : normalized
-}
-
-function isScreenshotRequest(question) {
-  return /\b(screenshot|screenshots|screen shot|screen shots|image|images|picture|pictures|photo|photos|visual|show me|source page|source pages|page image|page images|pdf page|pdf pages)\b/i.test(question)
-}
-
-function isFollowUpScreenshotRequest(question) {
-  const remainingText = question
-    .toLowerCase()
-    .replace(/\b(can|could|you|please|give|send|show|me|the|a|an|of|or|and|for|source|page|pdf|image|images|picture|photo|screenshot|screen shot|visual|more|explain|explanation|details|detailed|with)\b/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  return isScreenshotRequest(question) && remainingText.length === 0
-}
-
-function getEmbedOrigin(isEmbedMode, explicitEmbedOrigin) {
-  if (explicitEmbedOrigin) {
-    try {
-      return new URL(explicitEmbedOrigin).origin
-    } catch {
-      return explicitEmbedOrigin
-    }
-  }
-
-  if (!isEmbedMode) {
-    return window.location.origin
-  }
-
-  try {
-    return document.referrer ? new URL(document.referrer).origin : window.location.origin
-  } catch {
-    return window.location.origin
-  }
-}
-
-function buildRecentConversations(chatThreads) {
-  const recentQuestions = chatThreads.flatMap((thread) =>
-    thread.messages
-      .map((messageItem, index) => {
-        if (messageItem.role !== 'user') {
-          return null
-        }
-
-        const nextAssistantMessage = thread.messages
-          .slice(index + 1)
-          .find((nextMessage) => nextMessage.role === 'assistant')
-
-        return {
-          id: `${thread.id}-${index}`,
-          threadId: thread.id,
-          messageIndex: index,
-          title: getMessagePreview(messageItem.text),
-          preview: getMessagePreview(nextAssistantMessage?.text || thread.topic),
-          sortTime: messageItem.createdAt || thread.lastActivityAt || 0,
-        }
-      })
-      .filter(Boolean),
-  )
-
-  if (recentQuestions.length > 0) {
-    return [...recentQuestions].sort((a, b) => b.sortTime - a.sortTime)
-  }
-
-  return []
-}
-
-function normalizeSuggestionText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function buildSmartSuggestions(inputValue, knowledgeTopics) {
-  const normalizedInput = normalizeSuggestionText(inputValue)
-
-  if (normalizedInput.length < 3) {
-    return []
-  }
-
-  const topicPrompts = knowledgeTopics.flatMap((group) =>
-    group.items?.flatMap((item) => [item.prompt, `Tell me about ${item.label}.`]) || [],
-  )
-  const suggestions = [...smartSuggestionPrompts, ...topicPrompts]
-    .filter(Boolean)
-    .filter((suggestion, index, allSuggestions) => allSuggestions.indexOf(suggestion) === index)
-
-  return suggestions
-    .map((suggestion) => {
-      const normalizedSuggestion = normalizeSuggestionText(suggestion)
-      const inputTerms = normalizedInput.split(' ').filter(Boolean)
-      const matchedTerms = inputTerms.filter((term) => normalizedSuggestion.includes(term)).length
-      const startsWithInput = normalizedSuggestion.startsWith(normalizedInput)
-
-      return {
-        text: suggestion,
-        score: (startsWithInput ? 20 : 0) + matchedTerms,
-      }
-    })
-    .filter((suggestion) => suggestion.score > 0)
-    .sort((a, b) => b.score - a.score || a.text.length - b.text.length)
-    .slice(0, 5)
-    .map((suggestion) => suggestion.text)
-}
+import {
+  buildRecentConversations,
+  buildSmartSuggestions,
+  defaultAssistantGreeting,
+  getCurrentTime,
+  getEmbedOrigin,
+  getMessagePreview,
+  initialThreads,
+  isDefaultAssistantGreeting,
+  isFollowUpScreenshotRequest,
+  isScreenshotRequest,
+} from '../utils/chatbotUtils'
 
 function Chatbot() {
   const [searchParams] = useSearchParams()
@@ -291,7 +158,7 @@ function Chatbot() {
   function buildConversationContext(thread) {
     return (thread?.messages || [])
       .filter((messageItem) => ['user', 'assistant'].includes(messageItem.role))
-      .filter((messageItem) => messageItem.text && !/^ðŸŽ“?\s*Welcome/i.test(messageItem.text))
+      .filter((messageItem) => messageItem.text && !isDefaultAssistantGreeting(messageItem.text))
       .slice(-6)
       .map((messageItem) => ({
         role: messageItem.role,
@@ -493,9 +360,9 @@ function Chatbot() {
           {
             author: 'MCU Guide',
             role: 'assistant',
-            text: 'Hi, I am ready to help with MCU services. Try a quick action, or type your question below.',
+            text: defaultAssistantGreeting,
             time: getCurrentTime(),
-            source: 'MCU Student Support',
+            source: 'MCU Knowledge Base',
           },
         ],
         lastActivityAt: createdAt,
@@ -511,7 +378,9 @@ function Chatbot() {
       {!isEmbedMode && (
       <header className="mcu-kb-header">
         <div className="mcu-kb-brand">
-          <span aria-hidden="true">MCU</span>
+          <span className="mcu-kb-main-logo" aria-hidden="true">
+            <img src={mcuMainLogo} alt="" />
+          </span>
           <div>
             <strong>MCU Knowledge Base</strong>
             <small>Student services assistant</small>
@@ -555,8 +424,8 @@ function Chatbot() {
         <section className="mcu-kb-chat" aria-label="Chat with MCU Guide">
           {isCompactEmbedMode && (
             <header className="mcu-kb-embed-header">
-              <button type="button" aria-label="Back">‹</button>
-              <span aria-hidden="true">M</span>
+              <button type="button" aria-label="Back">&lsaquo;</button>
+              <span aria-hidden="true"><img src={mcuLogoCircle} alt="" /></span>
               <div>
                 <strong>MCU Guide</strong>
                 <small>I am here to assist you!</small>
@@ -582,7 +451,7 @@ function Chatbot() {
           {!isEmbedMode && (
           <div className="mcu-kb-hero">
             <div>
-              <h1>Ask questions across uploaded university documents.</h1>
+              <h1>Welcome to MCU Knowledge Base, how can help you today?</h1>
               <span>Answers are grounded in your knowledge base whenever matching content is found.</span>
             </div>
             <div className="mcu-kb-hero-card">
@@ -604,7 +473,7 @@ function Chatbot() {
             ))}
             {isTyping && (
               <div className="typing-row" aria-live="polite">
-                <div className="avatar" aria-hidden="true">M</div>
+                <div className="avatar" aria-hidden="true"><img src={mcuLogoCircle} alt="" /></div>
                 <div className="bubble typing-bubble">
                   <div className="message-meta">
                     <strong>MCU Guide</strong>
@@ -653,7 +522,7 @@ function Chatbot() {
                   setActiveSuggestionIndex(-1)
                 }, 120)}
                 onKeyDown={handleComposerKeyDown}
-                placeholder="Ask about enrollment, tuition, registrar, library, policies..."
+                placeholder="Start typing your question..."
                 aria-autocomplete="list"
                 aria-expanded={isSuggestionOpen && visibleSmartSuggestions.length > 0}
               />
@@ -697,3 +566,4 @@ function Chatbot() {
 }
 
 export default Chatbot
+

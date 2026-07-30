@@ -3,6 +3,7 @@ import Swal from 'sweetalert2'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge } from '../components/Badges'
 import { fetchUsers, setUserPassword, updateUserApproval } from '../services/userService'
+import { approveButtonClass, primaryButtonClass, rejectButtonClass, smallButtonClass } from '../ui/classes'
 
 const toast = Swal.mixin({
   toast: true,
@@ -12,10 +13,6 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
-const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
-const approveButtonClass = 'rounded-lg border border-green-200 bg-white px-3 py-2 text-sm font-bold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50'
-const rejectButtonClass = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50'
-const passwordButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff] disabled:cursor-not-allowed disabled:opacity-50'
 
 function UsersPage() {
   const [users, setUsers] = useState([])
@@ -119,7 +116,7 @@ function UsersPage() {
         minlength: '8',
       },
       showCancelButton: true,
-      confirmButtonColor: '#5c297c',
+      confirmButtonColor: '#642B87',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Save password',
       preConfirm: (value) => {
@@ -157,11 +154,11 @@ function UsersPage() {
   }
 
   return (
-    <article className="rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)] xl:col-span-full">
+    <article className="rounded-2xl border border-[#642B87]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(48,0,69,0.08)] xl:col-span-full">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Access Control</p>
-          <h3 className="m-0 text-xl font-bold text-[#3b0a57]">User Records</h3>
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#FFBA2E]">Access Control</p>
+          <h3 className="m-0 text-xl font-bold text-[#300045]">User Records</h3>
         </div>
         <button className={primaryButtonClass} type="button" onClick={loadUsers}>
           Refresh
@@ -202,7 +199,7 @@ function UsersPage() {
                   {updatingUserId === user.id ? 'Saving...' : 'Reject'}
                 </button>
                 <button
-                  className={passwordButtonClass}
+                  className={smallButtonClass}
                   type="button"
                   disabled={updatingUserId === user.id || user.status !== 'approved'}
                   onClick={() => handleSetPassword(user)}
@@ -222,3 +219,5 @@ function UsersPage() {
 }
 
 export default UsersPage
+
+

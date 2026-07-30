@@ -8,6 +8,7 @@ import {
   updateEmbedOrigin,
 } from '../services/embedOriginService'
 import { fallbackScopeOptions, fetchScopeOptions } from '../services/scopeService'
+import { checkboxClass, dangerButtonClass, fieldLabelClass, inputClass, primaryButtonClass, secondaryButtonClass, smallButtonClass, tokenButtonClass } from '../ui/classes'
 
 const emptyForm = {
   id: null,
@@ -25,14 +26,6 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
-const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
-const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
-const checkboxClass = 'h-4 w-4 rounded border-[#d9d3e4] accent-[#5c297c]'
-const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
-const secondaryButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-3 font-extrabold text-[#5c297c] transition hover:bg-[#f7f0ff]'
-const smallButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff]'
-const dangerButtonClass = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50'
-const tokenButtonClass = 'rounded-lg border border-[#f0a733]/30 bg-white px-3 py-2 text-xs font-extrabold text-[#7a4a00] transition hover:bg-[#fff4cf]'
 
 function getOriginHelpText(origin) {
   if (!origin.trim()) {
@@ -130,7 +123,7 @@ function WebsiteAccessPage() {
       showCancelButton: true,
       confirmButtonText: 'Remove',
       cancelButtonText: 'Cancel',
-      confirmButtonColor: '#5c297c',
+      confirmButtonColor: '#642B87',
     })
 
     if (!result.isConfirmed) {
@@ -163,7 +156,7 @@ function WebsiteAccessPage() {
       showCancelButton: true,
       confirmButtonText: 'Regenerate',
       cancelButtonText: 'Cancel',
-      confirmButtonColor: '#5c297c',
+      confirmButtonColor: '#642B87',
     })
 
     if (!result.isConfirmed) {
@@ -181,11 +174,11 @@ function WebsiteAccessPage() {
   }
 
   return (
-    <article className="rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)]">
+    <article className="rounded-2xl border border-[#642B87]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(48,0,69,0.08)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Embed Security</p>
-          <h3 className="m-0 text-xl font-bold text-[#3b0a57]">Website Access</h3>
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#FFBA2E]">Embed Security</p>
+          <h3 className="m-0 text-xl font-bold text-[#300045]">Website Access</h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">
             Add the websites that are allowed to use each chatbot scope. The URL must match the website origin exactly.
           </p>
@@ -193,9 +186,9 @@ function WebsiteAccessPage() {
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <form className="grid gap-4 rounded-xl border border-[#5c297c]/10 bg-[#faf7ff] p-4" onSubmit={handleSubmit}>
+        <form className="grid gap-4 rounded-xl border border-[#642B87]/10 bg-[#faf7ff] p-4" onSubmit={handleSubmit}>
           <div>
-            <strong className="text-[#3b0a57]">{form.id ? 'Edit Website' : 'Add Website'}</strong>
+            <strong className="text-[#300045]">{form.id ? 'Edit Website' : 'Add Website'}</strong>
             <p className="mt-1 text-sm leading-6 text-[#667085]">
               Use the same protocol and domain shown in the browser address bar.
             </p>
@@ -237,7 +230,7 @@ function WebsiteAccessPage() {
             <small className="text-xs font-semibold text-[#667085]">{getOriginHelpText(form.origin)}</small>
           </label>
 
-          <label className="flex items-center gap-2 text-sm font-extrabold text-[#3b0a57]">
+          <label className="flex items-center gap-2 text-sm font-extrabold text-[#300045]">
             <input
               className={checkboxClass}
               type="checkbox"
@@ -275,12 +268,12 @@ function WebsiteAccessPage() {
           )}
 
           {isLoading ? (
-            <div className="rounded-xl border border-[#5c297c]/10 p-5 text-sm text-[#667085]">Loading website access...</div>
+            <div className="rounded-xl border border-[#642B87]/10 p-5 text-sm text-[#667085]">Loading website access...</div>
           ) : groupedOrigins.map((group) => (
-            <section className="rounded-xl border border-[#5c297c]/10 bg-white p-4" key={group.value}>
+            <section className="rounded-xl border border-[#642B87]/10 bg-white p-4" key={group.value}>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <strong className="text-[#3b0a57]">{group.label}</strong>
-                <span className="rounded-full bg-[#efe8f7] px-3 py-1 text-xs font-bold text-[#5c297c]">
+                <strong className="text-[#300045]">{group.label}</strong>
+                <span className="rounded-full bg-[#efe8f7] px-3 py-1 text-xs font-bold text-[#642B87]">
                   {group.origins.length} websites
                 </span>
               </div>
@@ -291,13 +284,13 @@ function WebsiteAccessPage() {
                 <div className="grid gap-2">
                   {group.origins.map((origin) => (
                     <div
-                      className="flex flex-col gap-3 rounded-lg border border-[#5c297c]/10 bg-[#fbfafc] p-3 md:flex-row md:items-center md:justify-between"
+                      className="flex flex-col gap-3 rounded-lg border border-[#642B87]/10 bg-[#fbfafc] p-3 md:flex-row md:items-center md:justify-between"
                       key={origin.id}
                     >
                       <div>
                         <strong className="block text-sm text-[#241433]">{origin.label || origin.origin}</strong>
                         <span className="block break-all text-sm text-[#667085]">{origin.origin}</span>
-                        <code className="mt-2 block max-w-xl break-all rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#5c297c]">
+                        <code className="mt-2 block max-w-xl break-all rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#642B87]">
                           {origin.embedToken || 'No token yet'}
                         </code>
                         <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-bold ${
@@ -352,3 +345,5 @@ function WebsiteAccessPage() {
 }
 
 export default WebsiteAccessPage
+
+

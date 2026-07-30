@@ -4,13 +4,7 @@ import { API_BASE_URL } from '../../services/apiClient'
 import { fetchDocumentDetails, fetchDocumentsFromApi, PAGE_SIZE } from '../services/documentService'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge, TypeBadge } from '../components/Badges'
-
-const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
-const labelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
-const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
-const smallButtonClass = 'rounded-lg border border-[#f0a733]/40 bg-white px-3 py-2 text-sm font-bold text-[#7a4a00] transition hover:bg-[#fff4cf]'
-const paginationButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-3 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff] disabled:cursor-not-allowed disabled:opacity-50'
-const modalButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-2 text-sm font-bold text-[#5c297c] transition hover:bg-[#f7f0ff]'
+import { fieldLabelClass as labelClass, goldSmallButtonClass as smallButtonClass, inputClass, modalButtonClass, paginationButtonClass, primaryButtonClass } from '../ui/classes'
 
 function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 }) {
   const [page, setPage] = useState(1)
@@ -102,11 +96,11 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
   }
 
   return (
-    <article className={`rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)] ${compact ? 'xl:row-span-2' : 'xl:col-span-full'}`}>
+    <article className={`rounded-2xl border border-[#642B87]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(48,0,69,0.08)] ${compact ? 'xl:row-span-2' : 'xl:col-span-full'}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Knowledge Base</p>
-          <h3 className="m-0 text-xl font-bold text-[#3b0a57]">{compact ? 'Recent Documents' : 'Document Management'}</h3>
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#FFBA2E]">Knowledge Base</p>
+          <h3 className="m-0 text-xl font-bold text-[#300045]">{compact ? 'Recent Documents' : 'Document Management'}</h3>
         </div>
         <div className="flex gap-2">
           {compact && (
@@ -143,13 +137,13 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
               <option>Draft</option>
             </select>
           </label>
-          <div className="rounded-full bg-[#efe8f7] px-3 py-2 text-center text-xs font-extrabold text-[#5c297c]">Server-side list</div>
+          <div className="rounded-full bg-[#efe8f7] px-3 py-2 text-center text-xs font-extrabold text-[#642B87]">Server-side list</div>
         </div>
       )}
 
       <BootstrapDataTable
         columns={[
-          { key: 'id', label: 'ID', className: 'fw-semibold text-[#5c297c]' },
+          { key: 'id', label: 'ID', className: 'fw-semibold text-[#642B87]' },
           { key: 'title', label: 'Document', className: 'fw-bold' },
           { key: 'type', label: 'Type', render: (document) => <TypeBadge value={document.type} /> },
           { key: 'scope', label: 'Scope', className: 'text-capitalize' },
@@ -210,7 +204,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
           >
             <header className="document-modal-head">
               <div>
-                <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Document Preview</p>
+                <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#FFBA2E]">Document Preview</p>
                 <h3>{selectedDocument?.title || 'Loading document'}</h3>
               </div>
               <button className={modalButtonClass} type="button" onClick={closeDetailsModal}>Close</button>
@@ -280,3 +274,5 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
 }
 
 export default DocumentsPage
+
+

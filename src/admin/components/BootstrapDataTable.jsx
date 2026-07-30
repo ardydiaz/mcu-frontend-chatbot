@@ -35,3 +35,5 @@ function BootstrapDataTable({ columns, rows, isLoading = false, emptyMessage }) 
 }
 
 export default BootstrapDataTable
+
+

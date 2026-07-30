@@ -1,21 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --mcu-purple-950: #2a003f;
-  --mcu-purple-850: #3b0a57;
-  --mcu-purple-700: #64298a;
-  --mcu-gold: #ffc52f;
+  --mcu-purple-950: #300045;
+  --mcu-purple-850: #300045;
+  --mcu-purple-700: #642b87;
+  --mcu-gold: #ffba2e;
   --mcu-yellow: #ffd400;
-  --mcu-red: #ff1d25;
-  --mcu-pink: #f20b5f;
-  --mcu-cyan: #22b8c8;
-  --mcu-lime: #c8e83f;
+  --mcu-red: #f5222d;
+  --mcu-pink: #f20f5b;
+  --mcu-cyan: #08aabd;
+  --mcu-lime: #b6d83e;
+  --mcu-oat: #e7d9ad;
+  --mcu-sage: #b5c49b;
+  --mcu-mist: #aec8c4;
+  --mcu-rose: #d49a97;
+  --mcu-vintage: #cf785d;
+  --mcu-honey: #f2a91d;
+  --mcu-forest: #76a33a;
+  --mcu-stone: #4b828a;
+  --mcu-crimson: #a00045;
+  --mcu-rust: #97200d;
   --ink: #241433;
   --muted: #7b6d84;
   --surface: #fffaf0;
   --surface-strong: #ffffff;
-  --line: rgba(42, 0, 63, 0.12);
-  --shadow: 0 24px 80px rgba(42, 0, 63, 0.18);
+  --line: rgba(48, 0, 69, 0.12);
+  --shadow: 0 24px 80px rgba(48, 0, 69, 0.18);
   --font-sans:
     Inter, 'Segoe UI Variable', 'Segoe UI', Roboto, Helvetica, Arial, ui-sans-serif,
     system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -55,3 +65,4 @@ button {
 #root {
   min-height: 100vh;
 }
+

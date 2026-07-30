@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import Swal from 'sweetalert2'
 import { exportWebsiteImportWord, previewWebsiteImport } from '../services/websiteImportService'
+import { fieldLabelClass, inputClass, primaryButtonClass, secondaryButtonClass } from '../ui/classes'
 
-const fieldLabelClass = 'grid gap-2 text-sm font-extrabold text-[#3b0a57]'
-const inputClass = 'min-h-11 w-full rounded-lg border border-[#d9d3e4] bg-white px-4 py-3 text-sm font-bold text-[#241433] outline-none transition placeholder:text-[#9b8aaa] focus:border-[#5c297c] focus:ring-4 focus:ring-[#5c297c]/10'
-const primaryButtonClass = 'rounded-lg bg-[#ffc52f] px-4 py-3 font-extrabold text-[#2a003f] shadow-[0_10px_20px_rgba(255,197,47,0.24)] transition hover:bg-[#ffd966] disabled:cursor-not-allowed disabled:opacity-60'
-const secondaryButtonClass = 'rounded-lg border border-[#5c297c]/20 bg-white px-4 py-3 font-extrabold text-[#5c297c] transition hover:bg-[#f7f0ff] disabled:cursor-not-allowed disabled:opacity-60'
 
 const toast = Swal.mixin({
   toast: true,
@@ -82,16 +79,16 @@ function WebsiteImportPage() {
   }
 
   return (
-    <article className="rounded-2xl border border-[#5c297c]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(42,0,63,0.08)]">
+    <article className="rounded-2xl border border-[#642B87]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(48,0,69,0.08)]">
       <div>
-        <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#f0a733]">Knowledge Import</p>
-        <h3 className="m-0 text-xl font-bold text-[#3b0a57]">Website Importer</h3>
+        <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#FFBA2E]">Knowledge Import</p>
+        <h3 className="m-0 text-xl font-bold text-[#300045]">Website Importer</h3>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">
           Scan a public page, include supported modal/tab/accordion content, then download the result as a Word document for review.
         </p>
       </div>
 
-      <form className="mt-5 grid gap-4 rounded-xl border border-[#5c297c]/10 bg-[#faf7ff] p-4" onSubmit={handlePreview}>
+      <form className="mt-5 grid gap-4 rounded-xl border border-[#642B87]/10 bg-[#faf7ff] p-4" onSubmit={handlePreview}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)]">
           <label className={fieldLabelClass}>
             Website URL
@@ -133,8 +130,8 @@ function WebsiteImportPage() {
 
       <section className="mt-5 grid gap-3">
         {importMeta && (
-          <div className="rounded-xl border border-[#5c297c]/10 bg-[#faf7ff] p-4 text-sm leading-6 text-[#667085]">
-            <strong className="text-[#3b0a57]">
+          <div className="rounded-xl border border-[#642B87]/10 bg-[#faf7ff] p-4 text-sm leading-6 text-[#667085]">
+            <strong className="text-[#300045]">
               Extraction mode: {importMeta.extractionMode === 'browser-interactive' ? 'Smart interactive scan' : 'Static page scan'}
             </strong>
             {importMeta.notes.map((note) => (
@@ -144,26 +141,26 @@ function WebsiteImportPage() {
         )}
 
         {pages.length === 0 ? (
-          <div className="rounded-xl border border-[#5c297c]/10 p-5 text-sm text-[#667085]">
+          <div className="rounded-xl border border-[#642B87]/10 p-5 text-sm text-[#667085]">
             No preview yet. Enter a website URL and click Preview Website.
           </div>
         ) : pages.map((page) => (
-          <article className="rounded-xl border border-[#5c297c]/10 bg-[#fbfafc] p-4" key={page.url}>
+          <article className="rounded-xl border border-[#642B87]/10 bg-[#fbfafc] p-4" key={page.url}>
             <label className="flex items-start gap-3">
               <input
-                className="mt-1 h-4 w-4 rounded border-[#d9d3e4] accent-[#5c297c]"
+                className="mt-1 h-4 w-4 rounded border-[#d9d3e4] accent-[#642B87]"
                 type="checkbox"
                 checked={selectedUrls.includes(page.url)}
                 onChange={() => togglePage(page.url)}
               />
               <span className="grid gap-2">
                 <strong className="text-[#241433]">{page.title}</strong>
-                <a className="break-all text-sm font-bold text-[#5c297c]" href={page.url} target="_blank" rel="noreferrer">
+                <a className="break-all text-sm font-bold text-[#642B87]" href={page.url} target="_blank" rel="noreferrer">
                   {page.url}
                 </a>
                 <small className="font-bold text-[#667085]">{page.wordCount} words</small>
                 {page.extractionMode && (
-                  <small className="font-bold text-[#5c297c]">
+                  <small className="font-bold text-[#642B87]">
                     {page.extractionMode === 'browser-interactive'
                       ? `Smart scan${page.interactiveItemsFound ? `, ${page.interactiveItemsFound} interactive items checked` : ''}`
                       : 'Static scan'}
@@ -180,3 +177,5 @@ function WebsiteImportPage() {
 }
 
 export default WebsiteImportPage
+
+
