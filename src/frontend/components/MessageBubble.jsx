@@ -35,10 +35,11 @@ function isPreformattedHeading(line) {
 
   return (
     /^[A-Z][A-Z0-9\s|&/():-]{2,}$/.test(trimmedLine) ||
+    /^(local|foreign)$/i.test(trimmedLine) ||
     /^notes?:?$/i.test(trimmedLine) ||
     /^user guide$/i.test(trimmedLine) ||
     /^(qualifications?|requirements?|terms\s*&\s*conditions?)$/i.test(trimmedLine) ||
-    /\b(?:process flow|workflow|user guide|guide|procedure|steps|scholarships?)\b$/i.test(trimmedLine)
+    /\b(?:process flow|workflow|user guide|guide|procedure|steps|scholarships?|admission requirements?)\b$/i.test(trimmedLine)
   )
 }
 
@@ -93,6 +94,158 @@ function getListMarkerMatch(line) {
     value.match(/^\s*((?:\d+|[a-z]|[ivxlcdm]{1,6})[.)])\s*(.+)$/) ||
     value.match(/^\s*([•●▪-])\s*(.+)$/)
   )
+}
+
+function isStatValue(text) {
+  return /^\d+(?:[,.]\d+)?%?$/.test(String(text || '').trim())
+}
+
+function isStatLabel(text) {
+  const value = String(text || '').trim()
+
+  return value.length > 1 && value.length <= 60 && !/[.!?]$/.test(value) && !/^https?:\/\//i.test(value)
+}
+
+function shouldMergeParagraphLines(current, next) {
+  const currentText = String(current || '').trim()
+  const nextText = String(next || '').trim()
+
+  if (!currentText || !nextText || isStatValue(currentText) || isStatValue(nextText)) {
+    return false
+  }
+
+  if (/[.!?:;]$/.test(currentText)) {
+    return false
+  }
+
+  return (
+    /^[a-z("]/.test(nextText) ||
+    /\b(?:a|an|and|at|by|for|from|in|of|or|the|to|with)$/i.test(currentText) ||
+    currentText.length > 80
+  )
+}
+
+function mergeWrappedParagraphBlocks(blocks) {
+  const mergedBlocks = []
+  let paragraphBuffer = null
+
+  function flushParagraph() {
+    if (paragraphBuffer) {
+      mergedBlocks.push(paragraphBuffer)
+      paragraphBuffer = null
+    }
+  }
+
+  blocks.forEach((block) => {
+    if (block.type !== 'p') {
+      flushParagraph()
+      mergedBlocks.push(block)
+      return
+    }
+
+    if (paragraphBuffer && shouldMergeParagraphLines(paragraphBuffer.text, block.text)) {
+      paragraphBuffer = {
+        ...paragraphBuffer,
+        text: `${paragraphBuffer.text} ${block.text}`.replace(/\s+/g, ' ').trim(),
+      }
+      return
+    }
+
+    flushParagraph()
+    paragraphBuffer = block
+  })
+
+  flushParagraph()
+  return mergedBlocks
+}
+
+function formatStatBlocks(blocks) {
+  const formattedBlocks = []
+  let index = 0
+
+  while (index < blocks.length) {
+    const statItems = []
+    let cursor = index
+
+    while (
+      blocks[cursor]?.type === 'p' &&
+      blocks[cursor + 1]?.type === 'p' &&
+      isStatValue(blocks[cursor].text) &&
+      isStatLabel(blocks[cursor + 1].text)
+    ) {
+      statItems.push({
+        value: blocks[cursor].text,
+        label: blocks[cursor + 1].text,
+      })
+      cursor += 2
+    }
+
+    if (statItems.length >= 2) {
+      formattedBlocks.push({ type: 'statGrid', items: statItems })
+      index = cursor
+      continue
+    }
+
+    formattedBlocks.push(blocks[index])
+    index += 1
+  }
+
+  return formattedBlocks
+}
+
+function isListSectionHeading(text) {
+  return /^(local|foreign|requirements?|qualifications?|terms\s*&\s*conditions?|elementary|college|graduate studies|master of science|college of|foreign applicants?)\b/i.test(String(text || '').trim())
+}
+
+function shouldBecomeBullet(text) {
+  const value = String(text || '').trim()
+
+  return (
+    value.length > 4 &&
+    !isStatValue(value) &&
+    !/^about\b/i.test(value) &&
+    !/^(start your|journey with us|admission requirements)$/i.test(value)
+  )
+}
+
+function formatRequirementLists(blocks) {
+  const formattedBlocks = []
+  let index = 0
+
+  while (index < blocks.length) {
+    const block = blocks[index]
+    formattedBlocks.push(block)
+
+    if (block.type !== 'heading' || !isListSectionHeading(block.text)) {
+      index += 1
+      continue
+    }
+
+    const items = []
+    let cursor = index + 1
+
+    while (blocks[cursor]?.type === 'p' && shouldBecomeBullet(blocks[cursor].text)) {
+      items.push({
+        marker: '-',
+        value: blocks[cursor].text,
+      })
+      cursor += 1
+    }
+
+    if (items.length >= 3) {
+      formattedBlocks.push({ type: 'ul', items })
+      index = cursor
+      continue
+    }
+
+    index += 1
+  }
+
+  return formattedBlocks
+}
+
+function improveReadableBlocks(blocks) {
+  return formatRequirementLists(formatStatBlocks(mergeWrappedParagraphBlocks(blocks)))
 }
 
 function PreformattedText({ text, fullText, isTruncated }) {
@@ -153,7 +306,7 @@ function parseMessageBlocks(text) {
   })
 
   flushList()
-  return blocks
+  return improveReadableBlocks(blocks)
 }
 
 function MessageText({ text }) {
@@ -182,8 +335,21 @@ function MessageBlocks({ blocks }) {
             <div className={`message-list ${block.type === 'ol' ? 'ordered' : 'unordered'}`} key={`${block.type}-${index}`}>
               {items.map((item, itemIndex) => (
                 <div className="message-list-item" key={`${item.value}-${itemIndex}`} style={getIndentStyle(item.indentLevel || getMarkerIndentLevel(item.marker))}>
-                  <span className="message-list-marker">{block.type === 'ul' ? '-' : item.marker}</span>
+                  <span className="message-list-marker">{block.type === 'ul' ? '•' : item.marker}</span>
                   <p><LinkedText text={item.value} /></p>
+                </div>
+              ))}
+            </div>
+          )
+        }
+
+        if (block.type === 'statGrid') {
+          return (
+            <div className="message-stat-grid" key={`stats-${index}`}>
+              {block.items.map((item) => (
+                <div className="message-stat-card" key={`${item.value}-${item.label}`}>
+                  <strong>{item.value}</strong>
+                  <span>{item.label}</span>
                 </div>
               ))}
             </div>
