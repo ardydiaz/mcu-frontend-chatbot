@@ -25,6 +25,9 @@ function mapDocument(document) {
     title: document.title,
     owner: document.uploaded_by || 'Unknown',
     scope: document.site_scope || 'general',
+    topicCategory: document.topic_category || 'Automatic',
+    suggestedPrompt: document.suggested_prompt || '',
+    showAsTopic: document.show_as_topic !== 0,
     status: 'Published',
     type: getFileType(document.file_path),
     date: formatDate(document.created_at),
@@ -56,7 +59,16 @@ async function fetchDocumentsFromApi({ page, pageSize, search, status }) {
   }
 }
 
-async function uploadDocument({ title, siteScope = 'general', file, onProgress, onUploadComplete }) {
+async function uploadDocument({
+  title,
+  siteScope = 'general',
+  topicCategory = '',
+  suggestedPrompt = '',
+  showAsTopic = true,
+  file,
+  onProgress,
+  onUploadComplete,
+}) {
   const formData = new FormData()
   formData.append('file', file)
 
@@ -65,6 +77,9 @@ async function uploadDocument({ title, siteScope = 'general', file, onProgress, 
   }
 
   formData.append('siteScope', siteScope)
+  formData.append('topicCategory', topicCategory.trim())
+  formData.append('suggestedPrompt', suggestedPrompt.trim())
+  formData.append('showAsTopic', showAsTopic ? '1' : '0')
 
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()

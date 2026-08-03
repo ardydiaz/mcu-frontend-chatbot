@@ -14,6 +14,16 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
+const topicCategoryOptions = [
+  'Automatic',
+  'Admissions',
+  'Finance',
+  'Academics',
+  'Services',
+  'Student Life',
+  'Knowledge Base',
+]
+
 
 function formatFileSize(size) {
   if (!size) {
@@ -38,6 +48,9 @@ function isAllowedDocument(file) {
 function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
   const [title, setTitle] = useState('')
   const [siteScope, setSiteScope] = useState('general')
+  const [topicCategory, setTopicCategory] = useState('Automatic')
+  const [suggestedPrompt, setSuggestedPrompt] = useState('')
+  const [showAsTopic, setShowAsTopic] = useState(true)
   const [siteScopeOptions, setSiteScopeOptions] = useState(fallbackScopeOptions)
   const [file, setFile] = useState(null)
   const [error, setError] = useState('')
@@ -110,12 +123,18 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
       await uploadDocument({
         title,
         siteScope,
+        topicCategory: topicCategory === 'Automatic' ? '' : topicCategory,
+        suggestedPrompt,
+        showAsTopic,
         file,
         onProgress: setUploadProgress,
         onUploadComplete: () => setUploadPhase('processing'),
       })
       setTitle('')
       setSiteScope('general')
+      setTopicCategory('Automatic')
+      setSuggestedPrompt('')
+      setShowAsTopic(true)
       setFile(null)
       setUploadProgress(100)
       setUploadPhase('complete')
@@ -199,6 +218,37 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
                 <option value={option.value} key={option.value}>{option.label}</option>
               ))}
             </select>
+          </label>
+
+          <label className={fieldLabelClass}>
+            Topic Category
+            <select className={inputClass} value={topicCategory} onChange={(event) => setTopicCategory(event.target.value)}>
+              {topicCategoryOptions.map((option) => (
+                <option value={option === 'Automatic' ? 'Automatic' : option} key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className={fieldLabelClass}>
+            Suggested Prompt
+            <input
+              className={inputClass}
+              type="text"
+              value={suggestedPrompt}
+              onChange={(event) => setSuggestedPrompt(event.target.value)}
+              placeholder={title.trim() ? `What is ${title.trim()}?` : 'What should the chatbot ask when this topic is clicked?'}
+              maxLength={255}
+            />
+          </label>
+
+          <label className="flex items-center gap-3 rounded-xl border border-[#642B87]/10 bg-white px-4 py-3 text-sm font-extrabold text-[#300045]">
+            <input
+              className="h-4 w-4 accent-[#642B87]"
+              type="checkbox"
+              checked={showAsTopic}
+              onChange={(event) => setShowAsTopic(event.target.checked)}
+            />
+            Show in chatbot suggested topics
           </label>
 
           <div className="upload-file-summary">

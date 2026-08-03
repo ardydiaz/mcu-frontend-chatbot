@@ -147,6 +147,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
           { key: 'title', label: 'Document', className: 'fw-bold' },
           { key: 'type', label: 'Type', render: (document) => <TypeBadge value={document.type} /> },
           { key: 'scope', label: 'Scope', className: 'text-capitalize' },
+          { key: 'topicCategory', label: 'Topic Category' },
           { key: 'owner', label: 'Owner' },
           { key: 'status', label: 'Status', render: (document) => <StatusBadge value={document.status} /> },
           { key: 'date', label: 'Date' },
@@ -223,6 +224,18 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
                   <div>
                     <span>Scope</span>
                     <strong>{selectedDocument.siteScope || 'general'}</strong>
+                  </div>
+                  <div>
+                    <span>Topic Category</span>
+                    <strong>{selectedDocument.topicCategory || 'Automatic'}</strong>
+                  </div>
+                  <div>
+                    <span>Suggested Prompt</span>
+                    <strong>{selectedDocument.suggestedPrompt || `What is ${selectedDocument.title}?`}</strong>
+                  </div>
+                  <div>
+                    <span>Show As Topic</span>
+                    <strong>{selectedDocument.showAsTopic ? 'Yes' : 'No'}</strong>
                   </div>
                   <div>
                     <span>Pages / Sections</span>
