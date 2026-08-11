@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import mcuMainLogo from '../../assets/mcu-main-logo.png'
 import mcuLogoCircle from '../../assets/mcu-logo-circle.png'
+import mcuSmallLogo from '../../assets/mcu-sm-logo.png'
+import { AUTH_SESSION_CHANGED_EVENT, getStoredTokenPayload, getStoredUser, isLoggedIn } from '../../services/apiClient'
 import MessageBubble from '../components/MessageBubble'
 import { askChatbot, fetchChatbotTopics } from '../services/chatService'
 import {
@@ -17,7 +19,12 @@ import {
   isScreenshotRequest,
 } from '../utils/chatbotUtils'
 
+const GUEST_MESSAGE_LIMIT = 3
+const guestMessageCountKey = 'mcuGuestMessageCount'
+const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
+
 function Chatbot() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isEmbedMode = searchParams.get('embed') === '1'
   const isCompactEmbedMode = isEmbedMode && searchParams.get('compact') === '1'
@@ -36,6 +43,12 @@ function Chatbot() {
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
   const [highlightedMessageKey, setHighlightedMessageKey] = useState('')
   const [isEmbedAuthorized, setIsEmbedAuthorized] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => isLoggedIn())
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser() || getStoredTokenPayload() || null)
+  const [guestMessageCount, setGuestMessageCount] = useState(() => Number(localStorage.getItem(guestMessageCountKey) || 0))
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [isMicrosoftSigningIn, setIsMicrosoftSigningIn] = useState(false)
+  const [loginError, setLoginError] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef(null)
   const highlightTimerRef = useRef(null)
@@ -53,6 +66,9 @@ function Chatbot() {
     [knowledgeTopics, message],
   )
   const visibleSmartSuggestions = isCompactEmbedMode ? smartSuggestions.slice(0, 3) : smartSuggestions
+  const hasAuthenticatedSession = isAuthenticated || isLoggedIn()
+  const isGuestLimitReached = !hasAuthenticatedSession && guestMessageCount >= GUEST_MESSAGE_LIMIT
+  const guestMessagesRemaining = Math.max(0, GUEST_MESSAGE_LIMIT - guestMessageCount)
 
   useEffect(() => {
     return () => {
@@ -94,6 +110,34 @@ function Chatbot() {
       isMounted = false
     }
   }, [embedOrigin, embedToken, isEmbedMode, siteScope])
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      const nextIsAuthenticated = isLoggedIn()
+      const nextUser = nextIsAuthenticated ? getStoredUser() || getStoredTokenPayload() || null : null
+
+      if (nextIsAuthenticated) {
+        localStorage.removeItem(guestMessageCountKey)
+        setGuestMessageCount(0)
+        setIsLoginModalOpen(false)
+        setLoginError('')
+      }
+
+      setIsAuthenticated(nextIsAuthenticated)
+      setCurrentUser(nextUser)
+    }
+
+    window.addEventListener('storage', syncAuthState)
+    window.addEventListener('focus', syncAuthState)
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, syncAuthState)
+    syncAuthState()
+
+    return () => {
+      window.removeEventListener('storage', syncAuthState)
+      window.removeEventListener('focus', syncAuthState)
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, syncAuthState)
+    }
+  }, [])
 
   useEffect(() => {
     const stream = chatStreamRef.current
@@ -182,6 +226,38 @@ function Chatbot() {
     }
   }
 
+  function incrementGuestMessageCount() {
+    if (isLoggedIn()) {
+      return
+    }
+
+    setGuestMessageCount((currentCount) => {
+      const nextCount = Math.min(GUEST_MESSAGE_LIMIT, currentCount + 1)
+      localStorage.setItem(guestMessageCountKey, String(nextCount))
+      return nextCount
+    })
+  }
+
+  function openLoginModal() {
+    setLoginError('')
+    setIsLoginModalOpen(true)
+  }
+
+  function closeLoginModal() {
+    if (!isMicrosoftSigningIn) {
+      setIsLoginModalOpen(false)
+      setLoginError('')
+    }
+  }
+
+  function handleMicrosoftSignIn() {
+    setLoginError('')
+    setIsMicrosoftSigningIn(true)
+
+    sessionStorage.setItem(MICROSOFT_RETURN_PATH_KEY, `${window.location.pathname}${window.location.search}`)
+    navigate('/login?ms365=1')
+  }
+
   async function submitQuestion(question) {
     const trimmedQuestion = question.trim()
 
@@ -189,7 +265,23 @@ function Chatbot() {
       return
     }
 
+    const shouldBlockAsGuest = !isLoggedIn() && guestMessageCount >= GUEST_MESSAGE_LIMIT
+
+    if (shouldBlockAsGuest) {
+      setIsAuthenticated(false)
+      openLoginModal()
+      setMessage('')
+      return
+    }
+
+    if (isLoggedIn() && !isAuthenticated) {
+      setIsAuthenticated(true)
+      localStorage.removeItem(guestMessageCountKey)
+      setGuestMessageCount(0)
+    }
+
     stopTypingTimer()
+    incrementGuestMessageCount()
 
     const submittedAt = getNextActivityOrder()
     const userMessage = {
@@ -443,6 +535,7 @@ function Chatbot() {
                   time: getCurrentTime(),
                   source: 'MCU Guide',
                 }}
+                currentUser={currentUser}
               />
             </div>
           ) : (
@@ -468,7 +561,7 @@ function Chatbot() {
                 id={`chat-message-${activeThread.id}-${index}`}
                 key={`${messageItem.author}-${messageItem.time}-${index}`}
               >
-                <MessageBubble message={messageItem} />
+                <MessageBubble message={messageItem} currentUser={currentUser} />
               </div>
             ))}
             {isTyping && (
@@ -491,6 +584,16 @@ function Chatbot() {
           </div>
 
           <form className="mcu-kb-composer" onSubmit={handleSendMessage}>
+            {!hasAuthenticatedSession && (
+              <div className={`mcu-guest-access ${isGuestLimitReached ? 'is-limit-reached' : ''}`}>
+                <span>
+                  {isGuestLimitReached
+                    ? 'Guest limit reached. Log in to continue.'
+                    : `${guestMessagesRemaining} free guest message${guestMessagesRemaining === 1 ? '' : 's'} remaining.`}
+                </span>
+                <button type="button" onClick={openLoginModal}>Login</button>
+              </div>
+            )}
             <div className="mcu-kb-input-wrap">
               {isSuggestionOpen && visibleSmartSuggestions.length > 0 && (
                 <div className="mcu-smart-suggestions" role="listbox" aria-label="Suggested questions">
@@ -528,8 +631,48 @@ function Chatbot() {
                 aria-expanded={isSuggestionOpen && visibleSmartSuggestions.length > 0}
               />
             </div>
-            <button type="submit" disabled={!message.trim() || isTyping}>Send</button>
+            <button type="submit" disabled={!message.trim() || isTyping || isGuestLimitReached}>Send</button>
           </form>
+          {isLoginModalOpen && (
+            <div className="mcu-login-modal-backdrop" role="presentation" onMouseDown={closeLoginModal}>
+              <section
+                className="mcu-login-modal"
+                aria-labelledby="mcu-login-modal-title"
+                aria-modal="true"
+                role="dialog"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <button className="mcu-login-modal-close" type="button" aria-label="Close login modal" onClick={closeLoginModal}>
+                  &times;
+                </button>
+                <div className="mcu-login-modal-brand">
+                  <img src={mcuSmallLogo} alt="" />
+                  <div>
+                    <p>MCU Guide</p>
+                    <h2 id="mcu-login-modal-title">Continue with Microsoft 365</h2>
+                  </div>
+                </div>
+                <p className="mcu-login-modal-copy">
+                  Sign in with your authorized MCU Microsoft 365 account to continue chatting.
+                </p>
+                {loginError && <p className="mcu-login-modal-error">{loginError}</p>}
+                <button
+                  className="mcu-login-modal-ms365"
+                  type="button"
+                  onClick={handleMicrosoftSignIn}
+                  disabled={isMicrosoftSigningIn}
+                >
+                  <span className="microsoft-mark" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </span>
+                  {isMicrosoftSigningIn ? 'Opening Microsoft 365...' : 'Login with Microsoft 365'}
+                </button>
+              </section>
+            </div>
+          )}
           </>
           )}
         </section>

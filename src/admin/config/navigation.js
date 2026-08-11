@@ -3,7 +3,6 @@ export const adminNavigationSections = [
     title: 'Admin',
     items: [
       { label: 'Documents', view: 'documents', icon: 'D' },
-      { label: 'Website Importer', view: 'websiteImport', icon: 'I' },
       {
         label: 'Embed Generator',
         icon: 'E',

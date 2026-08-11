@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminSidebar from '../components/AdminSidebar'
 import AdminTopbar from '../components/AdminTopbar'
@@ -9,8 +9,8 @@ import ScopeManagementPage from './ScopeManagementPage'
 import UploadDocumentPage from './UploadDocumentPage'
 import UsersPage from './UsersPage'
 import WebsiteAccessPage from './WebsiteAccessPage'
-import WebsiteImportPage from './WebsiteImportPage'
 import { logout } from '../../services/authService'
+import { getStoredTokenPayload, getStoredUser } from '../../services/apiClient'
 
 function AdminDashboard() {
   const navigate = useNavigate()
@@ -18,6 +18,7 @@ function AdminDashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [documentRefreshKey, setDocumentRefreshKey] = useState(0)
+  const currentUser = useMemo(() => getStoredUser() || getStoredTokenPayload() || null, [])
 
   function handleLogout() {
     logout()
@@ -30,6 +31,7 @@ function AdminDashboard() {
 
       <section className="nexus-admin-workspace">
         <AdminTopbar
+          currentUser={currentUser}
           isProfileOpen={isProfileOpen}
           onProfileToggle={() => setIsProfileOpen((current) => !current)}
           onLogout={handleLogout}
@@ -45,7 +47,6 @@ function AdminDashboard() {
           {activeView === 'embedGenerator' && <EmbedGeneratorPage />}
           {activeView === 'websiteAccess' && <WebsiteAccessPage />}
           {activeView === 'scopeManagement' && <ScopeManagementPage />}
-          {activeView === 'websiteImport' && <WebsiteImportPage />}
           {activeView === 'chatLogs' && <ChatLogsPage />}
           {activeView === 'users' && <UsersPage />}
         </div>

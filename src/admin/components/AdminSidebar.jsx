@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import mcuHorizontalLogo from '../../assets/mcu-horizontal-reverse.png'
 import { adminNavigationSections } from '../config/navigation'
 
 function AdminSidebar({ activeView, onViewChange, onLogout }) {
@@ -8,14 +9,8 @@ function AdminSidebar({ activeView, onViewChange, onLogout }) {
     <aside className="nexus-sidebar flex flex-col border-r border-white/10 bg-[#300045] text-white">
       <div className="flex h-[52px] items-center justify-between border-b border-white/10 px-5">
         <div className="flex items-center gap-2">
-          <div className="grid h-7 w-7 place-items-center rounded-lg border border-[#FFBA2E]/50 bg-[#FFBA2E]/10 text-sm font-black text-[#FFBA2E]">
-            M
-          </div>
-          <h1 className="m-0 text-xl font-black leading-none text-white">MCU Admin</h1>
+          <img className="admin-sidebar-logo" src={mcuHorizontalLogo} alt="Manila Central University" />
         </div>
-        <button className="rounded border border-[#FFBA2E]/30 px-1.5 py-0.5 text-xs text-[#FFBA2E]" type="button">
-          M
-        </button>
       </div>
 
       <nav className="grid gap-5 p-3" aria-label="Admin navigation">
@@ -133,6 +128,5 @@ function AdminSidebar({ activeView, onViewChange, onLogout }) {
 }
 
 export default AdminSidebar
-
 
 

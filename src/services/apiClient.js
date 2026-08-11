@@ -2,6 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 const TOKEN_KEY = 'mcuAdminToken'
 const USER_KEY = 'mcuAdminUser'
 const LOGGED_IN_KEY = 'mcuAdminLoggedIn'
+const AUTH_SESSION_CHANGED_EVENT = 'mcu-auth-session-changed'
 
 function buildApiUrl(path) {
   return new URL(path, API_BASE_URL).toString()
@@ -53,19 +54,39 @@ function getStoredTokenExpiresAt() {
   return payload.exp * 1000
 }
 
+function getStoredTokenPayload() {
+  return getTokenPayload(getStoredToken())
+}
+
+function hasAdminAccess() {
+  if (!isLoggedIn()) {
+    return false
+  }
+
+  const payload = getStoredTokenPayload()
+  return payload?.role === 'admin' && payload?.approvalStatus === 'approved'
+}
+
 function setStoredSession({ token, user }) {
+  if (!token) {
+    throw new Error('Authentication token was not provided.')
+  }
+
   localStorage.setItem(LOGGED_IN_KEY, 'true')
   localStorage.setItem(TOKEN_KEY, token)
 
   if (user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user))
   }
+
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT))
 }
 
 function clearStoredSession() {
   localStorage.removeItem(LOGGED_IN_KEY)
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT))
 }
 
 function getStoredUser() {
@@ -148,12 +169,15 @@ async function apiFetch(path, options = {}) {
 }
 
 export {
+  AUTH_SESSION_CHANGED_EVENT,
   API_BASE_URL,
   TOKEN_KEY,
   clearStoredSession,
   getStoredTokenExpiresAt,
+  getStoredTokenPayload,
   getStoredToken,
   getStoredUser,
+  hasAdminAccess,
   isLoggedIn,
   isTokenExpired,
   setStoredSession,

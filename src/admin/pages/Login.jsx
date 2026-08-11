@@ -4,42 +4,90 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { loginWithCredentials } from '../../services/authService'
 import { setStoredSession } from '../../services/apiClient'
 import { fieldLabelClass, inputClass, microsoftButtonClass, primaryButtonFullClass } from '../ui/classes'
+import mcuLogoPurple from '../../assets/mcu-logo-purple.png'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const MICROSOFT_AUTH_PATH = import.meta.env.VITE_MICROSOFT_AUTH_PATH || '/api/auth/microsoft'
 const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || ''
 const MICROSOFT_AUTHORITY = import.meta.env.VITE_MICROSOFT_AUTHORITY || 'https://login.microsoftonline.com/common'
 const MICROSOFT_REDIRECT_URI = import.meta.env.VITE_MICROSOFT_REDIRECT_URI || `${window.location.origin}/`
+const MICROSOFT_LOGIN_SCOPES = ['openid', 'profile', 'email', 'User.Read']
+const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
+const GUEST_MESSAGE_COUNT_KEY = 'mcuGuestMessageCount'
+
+function getMicrosoftUnavailableMessage() {
+  if (!MICROSOFT_CLIENT_ID) {
+    return 'Missing Microsoft client ID. Set VITE_MICROSOFT_CLIENT_ID in your .env file.'
+  }
+
+  if (typeof window !== 'undefined' && !window.isSecureContext) {
+    return 'Microsoft 365 sign-in requires HTTPS in production. Use a domain with SSL, or localhost for local testing.'
+  }
+
+  return ''
+}
 
 function getMicrosoftAuthUrl() {
   return new URL(MICROSOFT_AUTH_PATH, API_BASE_URL).toString()
 }
 
+function clearMicrosoftInteractionState() {
+  if (!MICROSOFT_CLIENT_ID) {
+    return
+  }
+
+  ;[sessionStorage, localStorage].forEach((storage) => {
+    Object.keys(storage)
+      .filter((key) => {
+        const normalizedKey = key.toLowerCase()
+
+        return (
+          normalizedKey.includes('interaction.status') ||
+          normalizedKey === `msal.${MICROSOFT_CLIENT_ID.toLowerCase()}.interaction.status`
+        )
+      })
+      .forEach((key) => storage.removeItem(key))
+  })
+}
+
+function isStaleMicrosoftCallbackError(error) {
+  const errorCode = String(error?.errorCode || '')
+  const message = String(error?.message || '')
+
+  return errorCode === 'no_token_request_cache_error' || message.includes('no_token_request_cache_error')
+}
+
 function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const shouldStartMicrosoftSignIn = searchParams.get('ms365') === '1'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [authMessage, setAuthMessage] = useState('')
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isMicrosoftReady, setIsMicrosoftReady] = useState(false)
+  const microsoftUnavailableMessage = getMicrosoftUnavailableMessage()
   const msalInstance = useMemo(() => {
-    if (!MICROSOFT_CLIENT_ID) {
+    if (getMicrosoftUnavailableMessage()) {
       return null
     }
 
-    return new PublicClientApplication({
-      auth: {
-        clientId: MICROSOFT_CLIENT_ID,
-        authority: MICROSOFT_AUTHORITY,
-        redirectUri: MICROSOFT_REDIRECT_URI,
-      },
-      cache: {
-        cacheLocation: 'sessionStorage',
-        storeAuthStateInCookie: false,
-      },
-    })
+    try {
+      return new PublicClientApplication({
+        auth: {
+          clientId: MICROSOFT_CLIENT_ID,
+          authority: MICROSOFT_AUTHORITY,
+          redirectUri: MICROSOFT_REDIRECT_URI,
+        },
+        cache: {
+          cacheLocation: 'sessionStorage',
+          storeAuthStateInCookie: false,
+        },
+      })
+    } catch {
+      return null
+    }
   }, [])
 
   useEffect(() => {
@@ -61,9 +109,35 @@ function Login() {
 
         const result = await msalInstance.handleRedirectPromise()
 
-        if (!active || !result?.idToken) {
+        if (!active) {
           return
         }
+
+        if (!result?.idToken) {
+          if (shouldStartMicrosoftSignIn) {
+            setError('')
+            setAuthMessage('Redirecting to Microsoft 365...')
+            setIsSigningIn(true)
+            clearMicrosoftInteractionState()
+
+            msalInstance.loginRedirect({
+              scopes: MICROSOFT_LOGIN_SCOPES,
+            })
+              .catch((loginError) => {
+                if (active) {
+                  setError(loginError.message || 'Microsoft sign-in failed.')
+                  setAuthMessage('')
+                  setIsSigningIn(false)
+                }
+              })
+          }
+
+          return
+        }
+
+        const returnPath = sessionStorage.getItem(MICROSOFT_RETURN_PATH_KEY)
+        const isChatLogin = returnPath?.startsWith('/chatbot')
+
         setAuthMessage('Signing you in with Microsoft 365...')
 
         const response = await fetch(getMicrosoftAuthUrl(), {
@@ -73,6 +147,8 @@ function Login() {
           },
           body: JSON.stringify({
             idToken: result.idToken,
+            graphAccessToken: result.accessToken,
+            purpose: isChatLogin ? 'chat' : 'admin',
           }),
         })
 
@@ -86,12 +162,21 @@ function Login() {
           token: data.token || data.accessToken,
           user: data.user,
         })
+        localStorage.removeItem(GUEST_MESSAGE_COUNT_KEY)
 
-        navigate('/admin', { replace: true })
+        sessionStorage.removeItem(MICROSOFT_RETURN_PATH_KEY)
+        navigate(returnPath?.startsWith('/chatbot') ? returnPath : '/admin', { replace: true })
       } catch (msalError) {
         if (active) {
-          setError(msalError.message || 'Microsoft sign-in failed to initialize.')
-          setIsMicrosoftReady(false)
+          if (isStaleMicrosoftCallbackError(msalError)) {
+            clearMicrosoftInteractionState()
+            window.history.replaceState(null, '', '/login')
+            setError('Microsoft sign-in session expired. Please click Sign in with Microsoft 365 again.')
+            setIsMicrosoftReady(true)
+          } else {
+            setError(msalError.message || 'Microsoft sign-in failed to initialize.')
+            setIsMicrosoftReady(false)
+          }
           setIsSigningIn(false)
           setAuthMessage('')
         }
@@ -103,14 +188,18 @@ function Login() {
     return () => {
       active = false
     }
-  }, [msalInstance, navigate])
+  }, [msalInstance, navigate, shouldStartMicrosoftSignIn])
 
   useEffect(() => {
     const token = searchParams.get('token') || searchParams.get('accessToken')
 
     if (token) {
       setStoredSession({ token })
-      navigate('/admin', { replace: true })
+      localStorage.removeItem(GUEST_MESSAGE_COUNT_KEY)
+
+      const returnPath = sessionStorage.getItem(MICROSOFT_RETURN_PATH_KEY)
+      sessionStorage.removeItem(MICROSOFT_RETURN_PATH_KEY)
+      navigate(returnPath?.startsWith('/chatbot') ? returnPath : '/admin', { replace: true })
     }
   }, [navigate, searchParams])
 
@@ -135,7 +224,7 @@ function Login() {
 
   function handleMicrosoftSignIn() {
     if (!msalInstance) {
-      setError('Missing Microsoft client ID. Set VITE_MICROSOFT_CLIENT_ID in your .env file.')
+      setError(microsoftUnavailableMessage || 'Microsoft sign-in is not available in this browser.')
       return
     }
 
@@ -147,9 +236,10 @@ function Login() {
     setError('')
     setAuthMessage('Redirecting to Microsoft 365...')
     setIsSigningIn(true)
+    clearMicrosoftInteractionState()
 
     msalInstance.loginRedirect({
-      scopes: ['openid', 'profile', 'email'],
+      scopes: MICROSOFT_LOGIN_SCOPES,
     })
       .catch((loginError) => {
         setError(loginError.message || 'Microsoft sign-in failed.')
@@ -161,16 +251,8 @@ function Login() {
   return (
     <main className="login-shell">
       <section className="login-card">
-        <div className="brand-lockup login-brand">
-          <div className="flame-mark" aria-hidden="true">
-            <span className="flame flame-gold"></span>
-            <span className="flame flame-red"></span>
-            <span className="flame flame-purple"></span>
-          </div>
-          <div>
-            <p className="eyebrow">MCU University</p>
-            <h1>Admin Login</h1>
-          </div>
+        <div className="login-brand">
+          <img className="login-brand-logo" src={mcuLogoPurple} alt="Manila Central University" />
         </div>
 
         <form className="stack-form" onSubmit={handleSubmit}>
@@ -207,14 +289,21 @@ function Login() {
           <span>or</span>
         </div>
 
-        <button className={microsoftButtonClass} type="button" onClick={handleMicrosoftSignIn} disabled={isSigningIn || !isMicrosoftReady}>
+        <button
+          className={microsoftButtonClass}
+          type="button"
+          onClick={handleMicrosoftSignIn}
+          disabled={isSigningIn || !isMicrosoftReady || Boolean(microsoftUnavailableMessage)}
+        >
           <span className="microsoft-mark" aria-hidden="true">
             <span></span>
             <span></span>
             <span></span>
             <span></span>
           </span>
-          {!isMicrosoftReady
+          {microsoftUnavailableMessage
+            ? 'Microsoft sign-in requires HTTPS'
+            : !isMicrosoftReady
             ? 'Loading Microsoft sign-in...'
             : isSigningIn
               ? 'Connecting to Microsoft 365...'

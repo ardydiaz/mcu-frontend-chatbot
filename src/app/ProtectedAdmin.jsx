@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import AdminDashboard from '../admin/pages/AdminDashboard'
-import { clearStoredSession, getStoredTokenExpiresAt, isLoggedIn } from '../services/apiClient'
+import { clearStoredSession, getStoredTokenExpiresAt, hasAdminAccess, isLoggedIn } from '../services/apiClient'
 
 function ProtectedAdmin() {
   const [hasValidSession, setHasValidSession] = useState(() => isLoggedIn())
+  const [hasValidAdminAccess, setHasValidAdminAccess] = useState(() => hasAdminAccess())
 
   useEffect(() => {
     function endSession() {
       clearStoredSession()
       setHasValidSession(false)
+      setHasValidAdminAccess(false)
     }
 
     function checkSession() {
       const validSession = isLoggedIn()
+      const validAdminAccess = hasAdminAccess()
       setHasValidSession(validSession)
+      setHasValidAdminAccess(validAdminAccess)
 
       if (!validSession) {
         return null
@@ -56,6 +60,10 @@ function ProtectedAdmin() {
 
   if (!hasValidSession) {
     return <Navigate to="/login" replace />
+  }
+
+  if (!hasValidAdminAccess) {
+    return <Navigate to="/chatbot" replace />
   }
 
   return <AdminDashboard />

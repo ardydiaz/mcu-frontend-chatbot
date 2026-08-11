@@ -2,6 +2,19 @@ import { useState } from 'react'
 import { API_BASE_URL } from '../../services/apiClient'
 import mcuLogoCircle from '../../assets/mcu-logo-circle.png'
 
+function getInitials(name = '', email = '') {
+  const source = name || email || 'Student'
+  const parts = source
+    .replace(/@.*/, '')
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'S'
+}
+
 function buildImageUrl(url) {
   return new URL(url, API_BASE_URL).toString()
 }
@@ -381,16 +394,22 @@ function MessageBlocks({ blocks }) {
   )
 }
 
-function MessageBubble({ message }) {
+function MessageBubble({ message, currentUser }) {
   const [activeImage, setActiveImage] = useState(null)
   const images = message.images || []
   const shouldShowImages = message.showImages && images.length > 0
   const isAssistant = message.role === 'assistant'
+  const userPhotoUrl = !isAssistant ? currentUser?.photoUrl : ''
+  const userInitials = getInitials(currentUser?.name, currentUser?.email)
 
   return (
     <article className={`message ${message.role}`}>
-      <div className="avatar">
-        {isAssistant ? <img src={mcuLogoCircle} alt="" /> : 'S'}
+      <div className={`avatar ${userPhotoUrl ? 'has-photo' : ''}`}>
+        {isAssistant && <img src={mcuLogoCircle} alt="" />}
+        {!isAssistant && userPhotoUrl && (
+          <img src={userPhotoUrl} alt="" referrerPolicy="no-referrer" />
+        )}
+        {!isAssistant && !userPhotoUrl && userInitials}
       </div>
       <div className="bubble">
         <div className="message-meta">

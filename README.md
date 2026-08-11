@@ -1,6 +1,6 @@
 # MCU Frontend Chatbot
 
-React/Vite frontend for the MCU chatbot, admin dashboard, document management, website importer, and embeddable chatbot widget.
+React/Vite frontend for the MCU chatbot, admin dashboard, document management, and embeddable chatbot widget.
 
 ## Commands
 

@@ -100,6 +100,15 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.admin-sidebar-logo {
+  display: block;
+  width: 168px;
+  max-width: 100%;
+  height: 34px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .nexus-sidebar nav {
   padding: 16px 12px;
 }
@@ -527,6 +536,18 @@ h6 {
   color: var(--mcu-purple-950);
   background: var(--mcu-gold);
   overflow: visible;
+}
+
+.message.user .avatar.has-photo {
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(48, 0, 69, 0.14);
+}
+
+.message.user .avatar.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .bubble {
@@ -2160,7 +2181,7 @@ h6 {
 }
 
 .mcu-kb-header-actions button,
-.mcu-kb-composer button {
+.mcu-kb-composer > button[type="submit"] {
   border: 0;
   border-radius: 10px;
   color: var(--mcu-chat-purple-deep);
@@ -2480,6 +2501,154 @@ h6 {
   min-width: 0;
 }
 
+.mcu-guest-access {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -2px 2px 0;
+  color: #5f4b72;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.mcu-guest-access button {
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--mcu-chat-purple);
+  font-weight: 900;
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mcu-guest-access button:hover {
+  text-decoration: underline;
+}
+
+.mcu-guest-access.is-limit-reached {
+  color: #9a3412;
+}
+
+.mcu-login-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(48, 0, 69, 0.34);
+  backdrop-filter: blur(8px);
+}
+
+.mcu-login-modal {
+  position: relative;
+  width: min(420px, 100%);
+  border: 1px solid rgba(255, 186, 46, 0.42);
+  border-radius: 22px;
+  padding: 24px;
+  color: #1f1230;
+  background:
+    radial-gradient(circle at top right, rgba(255, 186, 46, 0.22), transparent 44%),
+    #fff;
+  box-shadow: 0 30px 90px rgba(48, 0, 69, 0.32);
+}
+
+.mcu-login-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  color: #642b87;
+  font-size: 1.35rem;
+  line-height: 1;
+  background: rgba(100, 43, 135, 0.08);
+  cursor: pointer;
+}
+
+.mcu-login-modal-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 36px;
+}
+
+.mcu-login-modal-brand img {
+  width: 86px;
+  height: 58px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 12px;
+}
+
+.mcu-login-modal-brand p {
+  margin: 0 0 4px;
+  color: #642b87;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mcu-login-modal-brand h2 {
+  margin: 0;
+  color: #300045;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+.mcu-login-modal-copy {
+  margin: 18px 0;
+  color: #5d506c;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.mcu-login-modal-error {
+  margin: 0 0 14px;
+  border: 1px solid rgba(245, 34, 45, 0.22);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #9f1239;
+  font-size: 0.86rem;
+  font-weight: 700;
+  background: rgba(245, 34, 45, 0.08);
+}
+
+.mcu-login-modal-ms365 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 13px 16px;
+  color: #fff;
+  font-weight: 900;
+  background: linear-gradient(135deg, #300045, #642b87);
+  box-shadow: 0 14px 34px rgba(48, 0, 69, 0.22);
+  cursor: pointer;
+}
+
+.mcu-login-modal-ms365:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 42px rgba(48, 0, 69, 0.26);
+}
+
+.mcu-login-modal-ms365:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .mcu-smart-suggestions {
   position: absolute;
   right: 0;
@@ -2523,7 +2692,7 @@ h6 {
   box-shadow: 0 0 0 4px rgba(100, 43, 135, 0.12);
 }
 
-.mcu-kb-composer button {
+.mcu-kb-composer > button[type="submit"] {
   min-width: 92px;
   padding: 0 18px;
   border-radius: 16px;
@@ -2531,13 +2700,13 @@ h6 {
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
-.mcu-kb-composer button:not(:disabled):hover {
+.mcu-kb-composer > button[type="submit"]:not(:disabled):hover {
   background: var(--mcu-yellow);
   box-shadow: 0 18px 34px rgba(255, 186, 46, 0.28);
   transform: translateY(-1px);
 }
 
-.mcu-kb-composer button:disabled {
+.mcu-kb-composer > button[type="submit"]:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -2707,6 +2876,10 @@ h6 {
   background: #fff;
 }
 
+.mcu-kb-shell.is-compact-embed .mcu-guest-access {
+  font-size: 0.72rem;
+}
+
 .mcu-kb-shell.is-compact-embed .mcu-kb-composer input {
   height: 44px;
   padding: 0 14px;
@@ -2723,7 +2896,7 @@ h6 {
   font-size: 0.84rem;
 }
 
-.mcu-kb-shell.is-compact-embed .mcu-kb-composer button {
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer > button[type="submit"] {
   position: static;
   display: flex;
   align-items: center;
@@ -2740,7 +2913,7 @@ h6 {
   background: var(--mcu-chat-gold);
 }
 
-.mcu-kb-shell.is-compact-embed .mcu-kb-composer button::before {
+.mcu-kb-shell.is-compact-embed .mcu-kb-composer > button[type="submit"]::before {
   content: '\2192';
   display: grid;
   place-items: center;
@@ -3213,11 +3386,22 @@ h6 {
 }
 
 .login-brand {
+  display: grid;
+  gap: 16px;
   align-items: flex-start;
+  margin-bottom: 24px;
 }
 
 .login-brand h1 {
   max-width: none;
+  color: var(--mcu-purple-950);
+}
+
+.login-brand-logo {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  object-fit: contain;
 }
 
 .login-card .stack-form label {
@@ -4512,7 +4696,7 @@ button.avatar-profile:hover {
     grid-template-columns: 1fr;
   }
 
-  .mcu-kb-composer button {
+  .mcu-kb-composer > button[type="submit"] {
     min-height: 44px;
   }
 

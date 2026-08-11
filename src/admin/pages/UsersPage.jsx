@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge } from '../components/Badges'
-import { fetchUsers, setUserPassword, updateUserApproval } from '../services/userService'
+import { fetchUsers, setUserPassword, updateUserApproval, updateUserRole } from '../services/userService'
 import { approveButtonClass, primaryButtonClass, rejectButtonClass, smallButtonClass } from '../ui/classes'
 
 const toast = Swal.mixin({
@@ -153,6 +153,49 @@ function UsersPage() {
     }
   }
 
+  async function handleRoleChange(user) {
+    const nextRole = user.role === 'admin' ? 'student' : 'admin'
+    const result = await Swal.fire({
+      title: nextRole === 'admin' ? 'Promote to admin?' : 'Change to student?',
+      text:
+        nextRole === 'admin'
+          ? `${user.name} will be approved and allowed to access the admin dashboard.`
+          : `${user.name} will keep chatbot access but lose admin dashboard access.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#642B87',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: nextRole === 'admin' ? 'Promote to admin' : 'Change to student',
+    })
+
+    if (!result.isConfirmed) {
+      return
+    }
+
+    setUpdatingUserId(user.id)
+    setError('')
+    setMessage('')
+
+    try {
+      const updatedUser = await updateUserRole(user.id, nextRole)
+      setUsers((currentUsers) =>
+        currentUsers.map((currentUser) => (currentUser.id === updatedUser.id ? updatedUser : currentUser)),
+      )
+      const successMessage =
+        nextRole === 'admin'
+          ? 'User was promoted to approved admin successfully.'
+          : 'User was changed to approved student successfully.'
+      setMessage(successMessage)
+      toast.fire({ icon: 'success', title: successMessage })
+    } catch (requestError) {
+      const errorMessage = requestError.message || 'Unable to update user role.'
+      setError(errorMessage)
+      toast.fire({ icon: 'error', title: errorMessage })
+    } finally {
+      setUpdatingUserId(null)
+    }
+  }
+
   return (
     <article className="rounded-2xl border border-[#642B87]/12 bg-white p-5 text-[#241433] shadow-[0_18px_50px_rgba(48,0,69,0.08)] xl:col-span-full">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -205,6 +248,14 @@ function UsersPage() {
                   onClick={() => handleSetPassword(user)}
                 >
                   Password
+                </button>
+                <button
+                  className={smallButtonClass}
+                  type="button"
+                  disabled={updatingUserId === user.id}
+                  onClick={() => handleRoleChange(user)}
+                >
+                  {user.role === 'admin' ? 'Make Student' : 'Make Admin'}
                 </button>
               </div>
             ),

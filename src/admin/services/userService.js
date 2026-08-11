@@ -49,6 +49,15 @@ async function updateUserApproval(userId, approvalStatus) {
   return mapUser(data.user)
 }
 
+async function updateUserRole(userId, role) {
+  const data = await apiFetch(`/api/users/${userId}/role`, {
+    method: 'PATCH',
+    body: { role },
+  })
+
+  return mapUser(data.user)
+}
+
 async function setUserPassword(userId, password) {
   const data = await apiFetch('/api/users/password', {
     method: 'PATCH',
@@ -58,6 +67,6 @@ async function setUserPassword(userId, password) {
   return mapUser(data.user)
 }
 
-export { fetchUsers, setUserPassword, updateUserApproval }
+export { fetchUsers, setUserPassword, updateUserApproval, updateUserRole }
 
 
