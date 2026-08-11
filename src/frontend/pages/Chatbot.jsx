@@ -3,7 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import mcuMainLogo from '../../assets/mcu-main-logo.png'
 import mcuLogoCircle from '../../assets/mcu-logo-circle.png'
 import mcuSmallLogo from '../../assets/mcu-sm-logo.png'
-import { AUTH_SESSION_CHANGED_EVENT, getStoredTokenPayload, getStoredUser, isLoggedIn } from '../../services/apiClient'
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  clearStoredSession,
+  getStoredTokenPayload,
+  getStoredUser,
+  isLoggedIn,
+} from '../../services/apiClient'
 import MessageBubble from '../components/MessageBubble'
 import { askChatbot, fetchChatbotTopics } from '../services/chatService'
 import {
@@ -20,6 +26,7 @@ import {
 } from '../utils/chatbotUtils'
 
 const GUEST_MESSAGE_LIMIT = 3
+const AUTH_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000
 const guestMessageCountKey = 'mcuGuestMessageCount'
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
 
@@ -52,6 +59,7 @@ function Chatbot() {
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef(null)
   const highlightTimerRef = useRef(null)
+  const inactivityTimerRef = useRef(null)
   const bottomRef = useRef(null)
   const chatStreamRef = useRef(null)
   const activityCounterRef = useRef(initialThreads.length)
@@ -79,8 +87,65 @@ function Chatbot() {
       if (highlightTimerRef.current) {
         clearTimeout(highlightTimerRef.current)
       }
+
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
     }
   }, [])
+
+  useEffect(() => {
+    function clearInactivityTimer() {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+        inactivityTimerRef.current = null
+      }
+    }
+
+    function logoutInactiveUser() {
+      if (!isLoggedIn()) {
+        return
+      }
+
+      clearStoredSession()
+      localStorage.removeItem(guestMessageCountKey)
+      setGuestMessageCount(0)
+      setIsAuthenticated(false)
+      setCurrentUser(null)
+      setIsLoginModalOpen(false)
+      setIsMicrosoftSigningIn(false)
+      setLoginError('')
+    }
+
+    function resetInactivityTimer() {
+      clearInactivityTimer()
+
+      if (!isLoggedIn()) {
+        return
+      }
+
+      inactivityTimerRef.current = window.setTimeout(logoutInactiveUser, AUTH_INACTIVITY_TIMEOUT_MS)
+    }
+
+    if (!isAuthenticated || !isLoggedIn()) {
+      clearInactivityTimer()
+      return clearInactivityTimer
+    }
+
+    const activityEvents = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'focus']
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true })
+    })
+    resetInactivityTimer()
+
+    return () => {
+      clearInactivityTimer()
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetInactivityTimer)
+      })
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     let isMounted = true
