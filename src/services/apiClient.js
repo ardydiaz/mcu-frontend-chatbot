@@ -3,6 +3,8 @@ const TOKEN_KEY = 'mcuAdminToken'
 const USER_KEY = 'mcuAdminUser'
 const LOGGED_IN_KEY = 'mcuAdminLoggedIn'
 const AUTH_SESSION_CHANGED_EVENT = 'mcu-auth-session-changed'
+const CHATBOT_LAST_ACTIVITY_KEY = 'mcuChatbotLastActivityAt'
+const CHATBOT_SESSION_CREATED_KEY = 'mcuChatbotSessionCreatedAt'
 
 function buildApiUrl(path) {
   return new URL(path, API_BASE_URL).toString()
@@ -74,6 +76,8 @@ function setStoredSession({ token, user }) {
 
   localStorage.setItem(LOGGED_IN_KEY, 'true')
   localStorage.setItem(TOKEN_KEY, token)
+  localStorage.setItem(CHATBOT_LAST_ACTIVITY_KEY, String(Date.now()))
+  localStorage.setItem(CHATBOT_SESSION_CREATED_KEY, String(Date.now()))
 
   if (user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user))
@@ -86,6 +90,8 @@ function clearStoredSession() {
   localStorage.removeItem(LOGGED_IN_KEY)
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
+  localStorage.removeItem(CHATBOT_LAST_ACTIVITY_KEY)
+  localStorage.removeItem(CHATBOT_SESSION_CREATED_KEY)
   window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT))
 }
 

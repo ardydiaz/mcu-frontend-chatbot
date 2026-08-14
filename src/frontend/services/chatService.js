@@ -10,7 +10,6 @@ async function askChatbot(
 ) {
   return apiFetch('/api/chat/ask', {
     method: 'POST',
-    auth: false,
     body: { message, scope, embedOrigin, embedToken, isEmbed, conversationContext },
   })
 }

@@ -27,8 +27,55 @@ import {
 
 const GUEST_MESSAGE_LIMIT = 3
 const AUTH_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000
+const AUTH_MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000
 const guestMessageCountKey = 'mcuGuestMessageCount'
+const AUTH_LAST_ACTIVITY_KEY = 'mcuChatbotLastActivityAt'
+const AUTH_SESSION_CREATED_KEY = 'mcuChatbotSessionCreatedAt'
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
+const CHATBOT_LOGIN_TOAST_KEY = 'mcuChatbotLoginToast'
+
+function getLastActivityAt() {
+  return Number(localStorage.getItem(AUTH_LAST_ACTIVITY_KEY) || 0)
+}
+
+function getSessionCreatedAt() {
+  return Number(localStorage.getItem(AUTH_SESSION_CREATED_KEY) || 0)
+}
+
+function setLastActivityAt(value = Date.now()) {
+  localStorage.setItem(AUTH_LAST_ACTIVITY_KEY, String(value))
+}
+
+function clearChatbotSessionState() {
+  clearStoredSession()
+  localStorage.removeItem(guestMessageCountKey)
+  localStorage.removeItem(AUTH_LAST_ACTIVITY_KEY)
+  localStorage.removeItem(AUTH_SESSION_CREATED_KEY)
+}
+
+function isInactiveSessionExpired() {
+  const lastActivityAt = getLastActivityAt()
+  return !lastActivityAt || Date.now() - lastActivityAt >= AUTH_INACTIVITY_TIMEOUT_MS
+}
+
+function isMaxSessionAgeExpired() {
+  const sessionCreatedAt = getSessionCreatedAt()
+  return !sessionCreatedAt || Date.now() - sessionCreatedAt >= AUTH_MAX_SESSION_AGE_MS
+}
+
+function isChatbotSessionExpired() {
+  return isInactiveSessionExpired() || isMaxSessionAgeExpired()
+}
+
+function getInitialToastMessage() {
+  const loginToastMessage = sessionStorage.getItem(CHATBOT_LOGIN_TOAST_KEY) || ''
+
+  if (loginToastMessage) {
+    sessionStorage.removeItem(CHATBOT_LOGIN_TOAST_KEY)
+  }
+
+  return loginToastMessage
+}
 
 function Chatbot() {
   const navigate = useNavigate()
@@ -50,19 +97,24 @@ function Chatbot() {
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
   const [highlightedMessageKey, setHighlightedMessageKey] = useState('')
   const [isEmbedAuthorized, setIsEmbedAuthorized] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(() => isLoggedIn())
-  const [currentUser, setCurrentUser] = useState(() => getStoredUser() || getStoredTokenPayload() || null)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => isLoggedIn() && !isChatbotSessionExpired())
+  const [currentUser, setCurrentUser] = useState(() => (
+    isLoggedIn() && !isChatbotSessionExpired() ? getStoredUser() || getStoredTokenPayload() || null : null
+  ))
   const [guestMessageCount, setGuestMessageCount] = useState(() => Number(localStorage.getItem(guestMessageCountKey) || 0))
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isMicrosoftSigningIn, setIsMicrosoftSigningIn] = useState(false)
   const [loginError, setLoginError] = useState('')
+  const [toastMessage, setToastMessage] = useState(getInitialToastMessage)
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef(null)
   const highlightTimerRef = useRef(null)
   const inactivityTimerRef = useRef(null)
+  const submitLockRef = useRef(false)
   const bottomRef = useRef(null)
   const chatStreamRef = useRef(null)
   const activityCounterRef = useRef(initialThreads.length)
+  const toastTimerRef = useRef(null)
 
   const activeThread = useMemo(
     () => chatThreads.find((thread) => thread.id === activeThreadId) ?? chatThreads[0],
@@ -91,8 +143,30 @@ function Chatbot() {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current)
       }
+
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current)
+      }
     }
   }, [])
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return
+    }
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage('')
+      toastTimerRef.current = null
+    }, 3200)
+
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current)
+        toastTimerRef.current = null
+      }
+    }
+  }, [toastMessage])
 
   useEffect(() => {
     function clearInactivityTimer() {
@@ -107,8 +181,7 @@ function Chatbot() {
         return
       }
 
-      clearStoredSession()
-      localStorage.removeItem(guestMessageCountKey)
+      clearChatbotSessionState()
       setGuestMessageCount(0)
       setIsAuthenticated(false)
       setCurrentUser(null)
@@ -124,7 +197,14 @@ function Chatbot() {
         return
       }
 
+      setLastActivityAt()
       inactivityTimerRef.current = window.setTimeout(logoutInactiveUser, AUTH_INACTIVITY_TIMEOUT_MS)
+    }
+
+    if (isLoggedIn() && isChatbotSessionExpired()) {
+      logoutInactiveUser()
+      clearInactivityTimer()
+      return clearInactivityTimer
     }
 
     if (!isAuthenticated || !isLoggedIn()) {
@@ -181,8 +261,19 @@ function Chatbot() {
       const nextIsAuthenticated = isLoggedIn()
       const nextUser = nextIsAuthenticated ? getStoredUser() || getStoredTokenPayload() || null : null
 
+      if (nextIsAuthenticated && isChatbotSessionExpired()) {
+        clearChatbotSessionState()
+        setGuestMessageCount(0)
+        setIsAuthenticated(false)
+        setCurrentUser(null)
+        setIsLoginModalOpen(false)
+        setLoginError('')
+        return
+      }
+
       if (nextIsAuthenticated) {
         localStorage.removeItem(guestMessageCountKey)
+        setLastActivityAt(getLastActivityAt() || Date.now())
         setGuestMessageCount(0)
         setIsLoginModalOpen(false)
         setLoginError('')
@@ -319,14 +410,15 @@ function Chatbot() {
     setLoginError('')
     setIsMicrosoftSigningIn(true)
 
-    sessionStorage.setItem(MICROSOFT_RETURN_PATH_KEY, `${window.location.pathname}${window.location.search}`)
-    navigate('/login?ms365=1')
+    const returnPath = `${window.location.pathname}${window.location.search}`
+    sessionStorage.setItem(MICROSOFT_RETURN_PATH_KEY, returnPath)
+    navigate(`/login?ms365=1&returnTo=${encodeURIComponent(returnPath)}`)
   }
 
   async function submitQuestion(question) {
     const trimmedQuestion = question.trim()
 
-    if (!trimmedQuestion || !activeThread) {
+    if (!trimmedQuestion || !activeThread || submitLockRef.current || isTyping) {
       return
     }
 
@@ -338,6 +430,8 @@ function Chatbot() {
       setMessage('')
       return
     }
+
+    submitLockRef.current = true
 
     if (isLoggedIn() && !isAuthenticated) {
       setIsAuthenticated(true)
@@ -390,6 +484,7 @@ function Chatbot() {
         messages: [...thread.messages, assistantReply],
       }))
       setIsTyping(false)
+      submitLockRef.current = false
       return
     }
 
@@ -418,6 +513,7 @@ function Chatbot() {
       }))
     } finally {
       setIsTyping(false)
+      submitLockRef.current = false
     }
   }
 
@@ -455,7 +551,9 @@ function Chatbot() {
 
     if (event.key === 'Enter' && activeSuggestionIndex >= 0 && visibleSmartSuggestions[activeSuggestionIndex]) {
       event.preventDefault()
-      handleSuggestionSelect(visibleSmartSuggestions[activeSuggestionIndex])
+      if (!isTyping && !submitLockRef.current) {
+        handleSuggestionSelect(visibleSmartSuggestions[activeSuggestionIndex])
+      }
     }
 
     if (event.key === 'Escape') {
@@ -532,6 +630,11 @@ function Chatbot() {
 
   return (
     <main className={`mcu-kb-shell ${isEmbedMode ? 'is-embed' : ''} ${isCompactEmbedMode ? 'is-compact-embed' : ''}`}>
+      {toastMessage && (
+        <div className="mcu-kb-toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
       {!isEmbedMode && (
       <header className="mcu-kb-header">
         <div className="mcu-kb-brand">
@@ -666,6 +769,7 @@ function Chatbot() {
                     <button
                       className={index === activeSuggestionIndex ? 'active' : ''}
                       type="button"
+                      disabled={isTyping}
                       role="option"
                       aria-selected={index === activeSuggestionIndex}
                       key={suggestion}

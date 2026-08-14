@@ -5,6 +5,7 @@ import { loginWithCredentials } from '../../services/authService'
 import { setStoredSession } from '../../services/apiClient'
 import { fieldLabelClass, inputClass, microsoftButtonClass, primaryButtonFullClass } from '../ui/classes'
 import mcuLogoPurple from '../../assets/mcu-logo-purple.png'
+import mcuSmallLogo from '../../assets/mcu-sm-logo.png'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const MICROSOFT_AUTH_PATH = import.meta.env.VITE_MICROSOFT_AUTH_PATH || '/api/auth/microsoft'
@@ -13,6 +14,7 @@ const MICROSOFT_AUTHORITY = import.meta.env.VITE_MICROSOFT_AUTHORITY || 'https:/
 const MICROSOFT_REDIRECT_URI = import.meta.env.VITE_MICROSOFT_REDIRECT_URI || `${window.location.origin}/`
 const MICROSOFT_LOGIN_SCOPES = ['openid', 'profile', 'email', 'User.Read']
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
+const CHATBOT_LOGIN_TOAST_KEY = 'mcuChatbotLoginToast'
 const GUEST_MESSAGE_COUNT_KEY = 'mcuGuestMessageCount'
 
 function getMicrosoftUnavailableMessage() {
@@ -57,10 +59,21 @@ function isStaleMicrosoftCallbackError(error) {
   return errorCode === 'no_token_request_cache_error' || message.includes('no_token_request_cache_error')
 }
 
+function getSafeReturnPath(value) {
+  const returnPath = String(value || '')
+
+  if (returnPath.startsWith('/chatbot')) {
+    return returnPath
+  }
+
+  return ''
+}
+
 function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const shouldStartMicrosoftSignIn = searchParams.get('ms365') === '1'
+  const requestedReturnPath = getSafeReturnPath(searchParams.get('returnTo'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -68,6 +81,7 @@ function Login() {
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [isMicrosoftReady, setIsMicrosoftReady] = useState(false)
   const microsoftUnavailableMessage = getMicrosoftUnavailableMessage()
+  const isChatbotMicrosoftLogin = shouldStartMicrosoftSignIn && Boolean(requestedReturnPath)
   const msalInstance = useMemo(() => {
     if (getMicrosoftUnavailableMessage()) {
       return null
@@ -135,8 +149,8 @@ function Login() {
           return
         }
 
-        const returnPath = sessionStorage.getItem(MICROSOFT_RETURN_PATH_KEY)
-        const isChatLogin = returnPath?.startsWith('/chatbot')
+        const returnPath = getSafeReturnPath(sessionStorage.getItem(MICROSOFT_RETURN_PATH_KEY)) || requestedReturnPath
+        const isChatLogin = Boolean(returnPath)
 
         setAuthMessage('Signing you in with Microsoft 365...')
 
@@ -165,7 +179,10 @@ function Login() {
         localStorage.removeItem(GUEST_MESSAGE_COUNT_KEY)
 
         sessionStorage.removeItem(MICROSOFT_RETURN_PATH_KEY)
-        navigate(returnPath?.startsWith('/chatbot') ? returnPath : '/admin', { replace: true })
+        if (isChatLogin) {
+          sessionStorage.setItem(CHATBOT_LOGIN_TOAST_KEY, 'Microsoft 365 login successful.')
+        }
+        navigate(isChatLogin ? returnPath : '/admin', { replace: true })
       } catch (msalError) {
         if (active) {
           if (isStaleMicrosoftCallbackError(msalError)) {
@@ -188,7 +205,7 @@ function Login() {
     return () => {
       active = false
     }
-  }, [msalInstance, navigate, shouldStartMicrosoftSignIn])
+  }, [msalInstance, navigate, requestedReturnPath, shouldStartMicrosoftSignIn])
 
   useEffect(() => {
     const token = searchParams.get('token') || searchParams.get('accessToken')
@@ -197,11 +214,14 @@ function Login() {
       setStoredSession({ token })
       localStorage.removeItem(GUEST_MESSAGE_COUNT_KEY)
 
-      const returnPath = sessionStorage.getItem(MICROSOFT_RETURN_PATH_KEY)
+      const returnPath = getSafeReturnPath(sessionStorage.getItem(MICROSOFT_RETURN_PATH_KEY)) || requestedReturnPath
       sessionStorage.removeItem(MICROSOFT_RETURN_PATH_KEY)
-      navigate(returnPath?.startsWith('/chatbot') ? returnPath : '/admin', { replace: true })
+      if (returnPath) {
+        sessionStorage.setItem(CHATBOT_LOGIN_TOAST_KEY, 'Microsoft 365 login successful.')
+      }
+      navigate(returnPath || '/admin', { replace: true })
     }
-  }, [navigate, searchParams])
+  }, [navigate, requestedReturnPath, searchParams])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -238,6 +258,10 @@ function Login() {
     setIsSigningIn(true)
     clearMicrosoftInteractionState()
 
+    if (requestedReturnPath) {
+      sessionStorage.setItem(MICROSOFT_RETURN_PATH_KEY, requestedReturnPath)
+    }
+
     msalInstance.loginRedirect({
       scopes: MICROSOFT_LOGIN_SCOPES,
     })
@@ -246,6 +270,52 @@ function Login() {
         setAuthMessage('')
         setIsSigningIn(false)
       })
+  }
+
+  if (isChatbotMicrosoftLogin) {
+    return (
+      <main className="mcu-login-modal-backdrop is-full-page" role="presentation">
+        <section
+          className="mcu-login-modal"
+          aria-labelledby="mcu-chat-login-title"
+          aria-modal="true"
+          role="dialog"
+        >
+          <div className="mcu-login-modal-brand">
+            <img src={mcuSmallLogo} alt="" />
+            <div>
+              <p>MCU Guide</p>
+              <h2 id="mcu-chat-login-title">Continue with Microsoft 365</h2>
+            </div>
+          </div>
+          <p className="mcu-login-modal-copy">
+            Sign in with your authorized MCU Microsoft 365 account to continue chatting.
+          </p>
+          {error && <p className="mcu-login-modal-error">{error}</p>}
+          {authMessage && <p className="form-note">{authMessage}</p>}
+          <button
+            className="mcu-login-modal-ms365"
+            type="button"
+            onClick={handleMicrosoftSignIn}
+            disabled={isSigningIn || !isMicrosoftReady || Boolean(microsoftUnavailableMessage)}
+          >
+            <span className="microsoft-mark" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+            {microsoftUnavailableMessage
+              ? 'Microsoft sign-in requires HTTPS'
+              : !isMicrosoftReady
+                ? 'Preparing Microsoft 365...'
+                : isSigningIn
+                  ? 'Connecting to Microsoft 365...'
+                  : 'Login with Microsoft 365'}
+          </button>
+        </section>
+      </main>
+    )
   }
 
   return (
