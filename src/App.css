@@ -2393,11 +2393,10 @@ h6 {
 
 .mcu-kb-hero h1 {
   max-width: 720px;
-  margin: 8px 0;
+  margin: 0px 0;
   color: #fff;
-  font-size: clamp(1.65rem, 2.6vw, 2.5rem);
+  font-size: 27px;
   font-weight: 850;
-  line-height: 1.12;
 }
 
 .mcu-kb-hero span,

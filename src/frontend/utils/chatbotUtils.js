@@ -6,7 +6,7 @@ export function getCurrentTime() {
 }
 
 export const defaultAssistantGreeting =
-  'Hi! How can I help you today? Choose a quick action or type your question below.'
+  'Hi! I am centralino bot, how can i help you today?'
 
 const legacyAssistantGreetings = [
   'Welcome to the MCU Knowledge Assistant!',
@@ -27,7 +27,7 @@ export const initialThreads = [
     updatedAt: 'Just now',
     messages: [
       {
-        author: 'MCU Guide',
+        author: 'Centralino Bot',
         role: 'assistant',
         text: defaultAssistantGreeting,
         time: getCurrentTime(),

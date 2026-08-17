@@ -642,8 +642,8 @@ function Chatbot() {
             <img src={mcuMainLogo} alt="" />
           </span>
           <div>
-            <strong>MCU Knowledge Base</strong>
-            <small>Student services assistant</small>
+            <strong>Manila Central University</strong>
+            <small>Centralino Bot</small>
           </div>
         </div>
         <div className="mcu-kb-header-actions">
@@ -712,12 +712,7 @@ function Chatbot() {
           {!isEmbedMode && (
           <div className="mcu-kb-hero">
             <div>
-              <h1>Welcome to MCU Knowledge Base, how can help you today?</h1>
-              <span>Answers are grounded in your knowledge base whenever matching content is found.</span>
-            </div>
-            <div className="mcu-kb-hero-card">
-              <strong>24/7</strong>
-              <span>Knowledge access</span>
+              <h1>Welcome to MCU Knowledge Base</h1>
             </div>
           </div>
           )}

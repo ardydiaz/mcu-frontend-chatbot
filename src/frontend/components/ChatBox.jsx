@@ -37,7 +37,7 @@ function ChatBox({
               </div>
               <div className="bubble typing-bubble">
                 <div className="message-meta">
-                  <strong>MCU Guide</strong>
+                  <strong>Centralino Bot</strong>
                   <span>typing...</span>
                 </div>
                 <div className="typing-dots" aria-hidden="true">

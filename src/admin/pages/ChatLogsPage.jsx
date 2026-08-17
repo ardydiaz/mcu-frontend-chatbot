@@ -228,7 +228,7 @@ function ChatLogsPage({ compact = false }) {
                 <p className="m-0 whitespace-pre-wrap text-sm leading-7">{selectedLog.message}</p>
               </div>
               <div className="rounded-xl border border-[#642B87]/12 bg-slate-50 p-4">
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[#642B87]">MCU Guide Response</p>
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-[#642B87]">Centralino Bot Response</p>
                 <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-slate-700">{selectedLog.response}</p>
               </div>
             </div>
