@@ -2159,25 +2159,50 @@ h6 {
   font-size: 0.82rem;
 }
 
-.mcu-kb-status {
+.mcu-kb-user-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   border: 1px solid rgba(255, 186, 46, 0.32);
   border-radius: 999px;
-  padding: 8px 12px;
+  max-width: 260px;
+  padding: 6px 12px 6px 6px;
   color: #fff;
   font-size: 0.84rem;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.12);
 }
 
-.mcu-kb-status::before {
-  content: '';
-  width: 8px;
-  height: 8px;
+.mcu-kb-user-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
   border-radius: 999px;
-  background: var(--mcu-chat-gold);
+  color: var(--mcu-chat-purple-deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--mcu-chat-gold), var(--mcu-yellow));
+}
+
+.mcu-kb-user-avatar.has-photo {
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.mcu-kb-user-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.mcu-kb-user-name {
+  overflow: hidden;
+  max-width: 180px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .mcu-kb-toast {
@@ -2281,20 +2306,10 @@ h6 {
 }
 
 .mcu-kb-topic-list,
-.mcu-kb-topic-list section,
 .mcu-kb-insights,
 .mcu-kb-insights section {
   display: grid;
   gap: 12px;
-}
-
-.mcu-kb-topic-list h2 {
-  max-width: none;
-  margin: 6px 0 0;
-  color: #667085;
-  font-size: 0.8rem;
-  font-weight: 720;
-  text-transform: uppercase;
 }
 
 .mcu-kb-topic-list button {
@@ -2344,6 +2359,7 @@ h6 {
 }
 
 .mcu-kb-chat {
+  position: relative;
   min-height: 0;
   max-height: 100%;
   height: 100%;
@@ -2497,9 +2513,49 @@ h6 {
   border: 1px solid rgba(255, 186, 46, 0.34);
   border-radius: 22px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 20px 60px rgba(48, 0, 69, 0.18);
-  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 8px 24px rgba(48, 0, 69, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.mcu-kb-shell.is-empty-chat:not(.is-embed) .mcu-kb-chat {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.mcu-kb-shell.is-empty-chat:not(.is-embed) .mcu-kb-hero {
+  min-height: 52%;
+  align-items: end;
+  justify-content: center;
+  border-bottom: 0;
+  padding: 48px 24px 138px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 82%, rgba(255, 186, 46, 0.18), transparent 18rem),
+    radial-gradient(circle at 50% 12%, rgba(100, 43, 135, 0.08), transparent 20rem);
+}
+
+.mcu-kb-shell.is-empty-chat:not(.is-embed) .mcu-kb-hero::after {
+  display: none;
+}
+
+.mcu-kb-shell.is-empty-chat:not(.is-embed) .mcu-kb-hero h1 {
+  color: var(--mcu-chat-purple-deep);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+}
+
+.mcu-kb-shell.is-empty-chat:not(.is-embed) .mcu-kb-stream {
+  display: none;
+}
+
+.mcu-kb-shell.is-empty-chat:not(.is-embed) .mcu-kb-composer {
+  position: absolute;
+  top: calc(50% + 18px);
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(760px, calc(100% - 48px));
+  transform: translateX(-50%);
+  box-shadow: 0 6px 18px rgba(48, 0, 69, 0.07);
 }
 
 .mcu-kb-composer input {
@@ -2515,6 +2571,39 @@ h6 {
 .mcu-kb-input-wrap {
   position: relative;
   min-width: 0;
+}
+
+.mcu-typewriter-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  right: 15px;
+  z-index: 1;
+  overflow: hidden;
+  color: #98a2b3;
+  font-size: 0.95rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.mcu-typewriter-placeholder::after {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  background: rgba(48, 0, 69, 0.46);
+  animation: mcu-placeholder-caret 0.9s steps(1) infinite;
+}
+
+@keyframes mcu-placeholder-caret {
+  50% {
+    opacity: 0;
+  }
 }
 
 .mcu-guest-access {
@@ -2542,6 +2631,10 @@ h6 {
 
 .mcu-guest-access button:hover {
   text-decoration: underline;
+}
+
+.mcu-guest-access.is-login-required {
+  color: var(--mcu-chat-purple-deep);
 }
 
 .mcu-guest-access.is-limit-reached {
@@ -5100,9 +5193,9 @@ button.avatar-profile:hover {
 }
 
 .mcu-kb-shell:not(.is-embed) .mcu-kb-composer {
-  border-color: rgba(255, 186, 46, 0.5);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 20px 70px rgba(48, 0, 69, 0.22);
+  border-color: rgba(255, 186, 46, 0.42);
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 8px 24px rgba(48, 0, 69, 0.08);
 }
 
 .mcu-kb-shell .message:not(.user),

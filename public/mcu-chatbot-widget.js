@@ -74,7 +74,7 @@
     isOpen = nextOpen;
     panel.setAttribute('aria-hidden', String(!isOpen));
     button.setAttribute('aria-expanded', String(isOpen));
-    button.setAttribute('aria-label', isOpen ? 'Close MCU Guide chatbot' : 'Open MCU Guide chatbot');
+    button.setAttribute('aria-label', isOpen ? 'Close MCU Centralino bot chatbot' : 'Open MCU Centralino bot chatbot');
     button.innerHTML = isOpen ? '<span aria-hidden="true">×</span>' : '<span aria-hidden="true">M</span>';
     panel.style.opacity = isOpen ? '1' : '0';
     panel.style.pointerEvents = isOpen ? 'auto' : 'none';

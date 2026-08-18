@@ -25,7 +25,6 @@ import {
   isScreenshotRequest,
 } from '../utils/chatbotUtils'
 
-const GUEST_MESSAGE_LIMIT = 3
 const AUTH_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000
 const AUTH_MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000
 const guestMessageCountKey = 'mcuGuestMessageCount'
@@ -33,6 +32,7 @@ const AUTH_LAST_ACTIVITY_KEY = 'mcuChatbotLastActivityAt'
 const AUTH_SESSION_CREATED_KEY = 'mcuChatbotSessionCreatedAt'
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
 const CHATBOT_LOGIN_TOAST_KEY = 'mcuChatbotLoginToast'
+const animatedPlaceholderPrompt = 'Start typing your question...'
 
 function getLastActivityAt() {
   return Number(localStorage.getItem(AUTH_LAST_ACTIVITY_KEY) || 0)
@@ -77,6 +77,19 @@ function getInitialToastMessage() {
   return loginToastMessage
 }
 
+function getInitials(name = '', email = '') {
+  const source = name || email || 'Student'
+  const parts = source
+    .replace(/@.*/, '')
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'S'
+}
+
 function Chatbot() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -101,11 +114,13 @@ function Chatbot() {
   const [currentUser, setCurrentUser] = useState(() => (
     isLoggedIn() && !isChatbotSessionExpired() ? getStoredUser() || getStoredTokenPayload() || null : null
   ))
-  const [guestMessageCount, setGuestMessageCount] = useState(() => Number(localStorage.getItem(guestMessageCountKey) || 0))
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isMicrosoftSigningIn, setIsMicrosoftSigningIn] = useState(false)
   const [loginError, setLoginError] = useState('')
   const [toastMessage, setToastMessage] = useState(getInitialToastMessage)
+  const [brokenHeaderPhotoUrl, setBrokenHeaderPhotoUrl] = useState('')
+  const [placeholderCharIndex, setPlaceholderCharIndex] = useState(0)
+  const [isPlaceholderDeleting, setIsPlaceholderDeleting] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef(null)
   const highlightTimerRef = useRef(null)
@@ -127,8 +142,12 @@ function Chatbot() {
   )
   const visibleSmartSuggestions = isCompactEmbedMode ? smartSuggestions.slice(0, 3) : smartSuggestions
   const hasAuthenticatedSession = isAuthenticated || isLoggedIn()
-  const isGuestLimitReached = !hasAuthenticatedSession && guestMessageCount >= GUEST_MESSAGE_LIMIT
-  const guestMessagesRemaining = Math.max(0, GUEST_MESSAGE_LIMIT - guestMessageCount)
+  const hasConversationStarted = activeThread?.messages.some((messageItem) => messageItem.role === 'user') || isTyping
+  const flatKnowledgeTopics = knowledgeTopics.flatMap((group) => group.items || [])
+  const headerDisplayName = currentUser?.name || currentUser?.email || 'Student'
+  const headerPhotoUrl = currentUser?.photoUrl && currentUser.photoUrl !== brokenHeaderPhotoUrl ? currentUser.photoUrl : ''
+  const headerInitials = getInitials(currentUser?.name, currentUser?.email)
+  const placeholderText = animatedPlaceholderPrompt.slice(0, placeholderCharIndex)
 
   useEffect(() => {
     return () => {
@@ -149,6 +168,30 @@ function Chatbot() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const isComplete = placeholderCharIndex === animatedPlaceholderPrompt.length
+    const isEmpty = placeholderCharIndex === 0
+    const delay = isComplete && !isPlaceholderDeleting ? 1300 : isEmpty && isPlaceholderDeleting ? 320 : isPlaceholderDeleting ? 32 : 58
+
+    const timerId = window.setTimeout(() => {
+      if (isComplete && !isPlaceholderDeleting) {
+        setIsPlaceholderDeleting(true)
+        return
+      }
+
+      if (isEmpty && isPlaceholderDeleting) {
+        setIsPlaceholderDeleting(false)
+        return
+      }
+
+      setPlaceholderCharIndex((currentIndex) => currentIndex + (isPlaceholderDeleting ? -1 : 1))
+    }, delay)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [isPlaceholderDeleting, placeholderCharIndex])
 
   useEffect(() => {
     if (!toastMessage) {
@@ -182,7 +225,6 @@ function Chatbot() {
       }
 
       clearChatbotSessionState()
-      setGuestMessageCount(0)
       setIsAuthenticated(false)
       setCurrentUser(null)
       setIsLoginModalOpen(false)
@@ -263,7 +305,6 @@ function Chatbot() {
 
       if (nextIsAuthenticated && isChatbotSessionExpired()) {
         clearChatbotSessionState()
-        setGuestMessageCount(0)
         setIsAuthenticated(false)
         setCurrentUser(null)
         setIsLoginModalOpen(false)
@@ -274,7 +315,6 @@ function Chatbot() {
       if (nextIsAuthenticated) {
         localStorage.removeItem(guestMessageCountKey)
         setLastActivityAt(getLastActivityAt() || Date.now())
-        setGuestMessageCount(0)
         setIsLoginModalOpen(false)
         setLoginError('')
       }
@@ -382,18 +422,6 @@ function Chatbot() {
     }
   }
 
-  function incrementGuestMessageCount() {
-    if (isLoggedIn()) {
-      return
-    }
-
-    setGuestMessageCount((currentCount) => {
-      const nextCount = Math.min(GUEST_MESSAGE_LIMIT, currentCount + 1)
-      localStorage.setItem(guestMessageCountKey, String(nextCount))
-      return nextCount
-    })
-  }
-
   function openLoginModal() {
     setLoginError('')
     setIsLoginModalOpen(true)
@@ -422,12 +450,9 @@ function Chatbot() {
       return
     }
 
-    const shouldBlockAsGuest = !isLoggedIn() && guestMessageCount >= GUEST_MESSAGE_LIMIT
-
-    if (shouldBlockAsGuest) {
+    if (!isLoggedIn()) {
       setIsAuthenticated(false)
       openLoginModal()
-      setMessage('')
       return
     }
 
@@ -436,11 +461,9 @@ function Chatbot() {
     if (isLoggedIn() && !isAuthenticated) {
       setIsAuthenticated(true)
       localStorage.removeItem(guestMessageCountKey)
-      setGuestMessageCount(0)
     }
 
     stopTypingTimer()
-    incrementGuestMessageCount()
 
     const submittedAt = getNextActivityOrder()
     const userMessage = {
@@ -629,7 +652,7 @@ function Chatbot() {
   }
 
   return (
-    <main className={`mcu-kb-shell ${isEmbedMode ? 'is-embed' : ''} ${isCompactEmbedMode ? 'is-compact-embed' : ''}`}>
+    <main className={`mcu-kb-shell ${isEmbedMode ? 'is-embed' : ''} ${isCompactEmbedMode ? 'is-compact-embed' : ''} ${!isEmbedMode && !hasConversationStarted ? 'is-empty-chat' : ''}`}>
       {toastMessage && (
         <div className="mcu-kb-toast" role="status" aria-live="polite">
           {toastMessage}
@@ -647,7 +670,25 @@ function Chatbot() {
           </div>
         </div>
         <div className="mcu-kb-header-actions">
-          <span className="mcu-kb-status">Online</span>
+          {hasAuthenticatedSession ? (
+            <div className="mcu-kb-user-chip" aria-label={`Signed in as ${headerDisplayName}`}>
+              <span className={`mcu-kb-user-avatar ${headerPhotoUrl ? 'has-photo' : ''}`} aria-hidden="true">
+                {headerPhotoUrl ? (
+                  <img
+                    src={headerPhotoUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onError={() => setBrokenHeaderPhotoUrl(headerPhotoUrl)}
+                  />
+                ) : (
+                  headerInitials
+                )}
+              </span>
+              <span className="mcu-kb-user-name">{headerDisplayName}</span>
+            </div>
+          ) : (
+            <button type="button" onClick={openLoginModal}>Login</button>
+          )}
           <button type="button" onClick={handleNewChat}>New Chat</button>
         </div>
       </header>
@@ -658,24 +699,19 @@ function Chatbot() {
         <aside className="mcu-kb-nav" aria-label="Knowledge topics">
           <div className="mcu-kb-nav-head">
             <p>Topics</p>
-            <span>{knowledgeTopics.reduce((total, group) => total + group.items.length, 0)} guides</span>
+            <span>{flatKnowledgeTopics.length} guides</span>
           </div>
           <div className="mcu-kb-topic-list">
-            {knowledgeTopics.length === 0 && (
+            {flatKnowledgeTopics.length === 0 && (
               <div className="mcu-kb-empty-topics">
                 No uploaded topics are available for this scope yet.
               </div>
             )}
-            {knowledgeTopics.map((group) => (
-              <section key={group.label}>
-                <h2>{group.label}</h2>
-                {group.items.map((item) => (
-                  <button type="button" key={item.label} onClick={() => handleQuickAction(item.prompt)}>
-                    <span>{item.icon}</span>
-                    {item.label}
-                  </button>
-                ))}
-              </section>
+            {flatKnowledgeTopics.map((item) => (
+              <button type="button" key={`${item.label}-${item.prompt}`} onClick={() => handleQuickAction(item.prompt)}>
+                <span>{item.icon}</span>
+                {item.label}
+              </button>
             ))}
           </div>
         </aside>
@@ -687,7 +723,7 @@ function Chatbot() {
               <button type="button" aria-label="Back">&lsaquo;</button>
               <span aria-hidden="true"><img src={mcuLogoCircle} alt="" /></span>
               <div>
-                <strong>MCU Guide</strong>
+                <strong>Centralino bot</strong>
                 <small>I am here to assist you!</small>
               </div>
             </header>
@@ -697,7 +733,7 @@ function Chatbot() {
             <div className="mcu-kb-stream">
               <MessageBubble
                 message={{
-                  author: 'MCU Guide',
+                  author: 'Centralino bot',
                   role: 'assistant',
                   text: 'This chatbot embed is not authorized for this website.',
                   time: getCurrentTime(),
@@ -747,16 +783,6 @@ function Chatbot() {
           </div>
 
           <form className="mcu-kb-composer" onSubmit={handleSendMessage}>
-            {!hasAuthenticatedSession && (
-              <div className={`mcu-guest-access ${isGuestLimitReached ? 'is-limit-reached' : ''}`}>
-                <span>
-                  {isGuestLimitReached
-                    ? 'Guest limit reached. Log in to continue.'
-                    : `${guestMessagesRemaining} free guest message${guestMessagesRemaining === 1 ? '' : 's'} remaining.`}
-                </span>
-                <button type="button" onClick={openLoginModal}>Login</button>
-              </div>
-            )}
             <div className="mcu-kb-input-wrap">
               {isSuggestionOpen && visibleSmartSuggestions.length > 0 && (
                 <div className="mcu-smart-suggestions" role="listbox" aria-label="Suggested questions">
@@ -776,6 +802,11 @@ function Chatbot() {
                   ))}
                 </div>
               )}
+              {!message && (
+                <span className="mcu-typewriter-placeholder" aria-hidden="true">
+                  {placeholderText || 'Start typing your question...'}
+                </span>
+              )}
               <input
                 value={message}
                 onChange={(event) => {
@@ -789,13 +820,13 @@ function Chatbot() {
                   setActiveSuggestionIndex(-1)
                 }, 120)}
                 onKeyDown={handleComposerKeyDown}
-                placeholder="Start typing your question..."
+                placeholder=""
                 maxLength={2000}
                 aria-autocomplete="list"
                 aria-expanded={isSuggestionOpen && visibleSmartSuggestions.length > 0}
               />
             </div>
-            <button type="submit" disabled={!message.trim() || isTyping || isGuestLimitReached}>Send</button>
+            <button type="submit" disabled={!message.trim() || isTyping}>Send</button>
           </form>
           {isLoginModalOpen && (
             <div className="mcu-login-modal-backdrop" role="presentation" onMouseDown={closeLoginModal}>
@@ -812,7 +843,7 @@ function Chatbot() {
                 <div className="mcu-login-modal-brand">
                   <img src={mcuSmallLogo} alt="" />
                   <div>
-                    <p>MCU Guide</p>
+                    <p>Centralino Bot</p>
                     <h2 id="mcu-login-modal-title">Continue with Microsoft 365</h2>
                   </div>
                 </div>
