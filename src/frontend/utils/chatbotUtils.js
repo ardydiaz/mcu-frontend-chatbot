@@ -6,10 +6,11 @@ export function getCurrentTime() {
 }
 
 export const defaultAssistantGreeting =
-  'Hi! I am centralino bot, how can i help you today?'
+  'Hello! I am Centralino Bot. How can I help you today?'
 
 const legacyAssistantGreetings = [
   'Welcome to the MCU Knowledge Assistant!',
+  'Hi! I am centralino bot, how can i help you today?',
   defaultAssistantGreeting,
 ]
 
@@ -158,4 +159,3 @@ export function buildSmartSuggestions(inputValue, knowledgeTopics) {
     .slice(0, 5)
     .map((suggestion) => suggestion.text)
 }
-

@@ -33,6 +33,7 @@ const AUTH_SESSION_CREATED_KEY = 'mcuChatbotSessionCreatedAt'
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
 const CHATBOT_LOGIN_TOAST_KEY = 'mcuChatbotLoginToast'
 const animatedPlaceholderPrompt = 'Start typing your question...'
+const ASSISTANT_NAME = 'Centralino Bot'
 
 function getLastActivityAt() {
   return Number(localStorage.getItem(AUTH_LAST_ACTIVITY_KEY) || 0)
@@ -384,7 +385,7 @@ function Chatbot() {
     const extraSourceCount = data.sources?.length > 3 ? data.sources.length - 3 : 0
 
     return {
-      author: 'MCU Guide',
+      author: ASSISTANT_NAME,
       role: 'assistant',
       text: data.answer || 'I found a response, but it did not include answer text.',
       blocks: data.answerBlocks,
@@ -414,7 +415,7 @@ function Chatbot() {
 
   function buildErrorReply(errorMessage) {
     return {
-      author: 'MCU Guide',
+      author: ASSISTANT_NAME,
       role: 'assistant',
       text: errorMessage || 'I cannot connect to the official knowledge base right now. Please try again later or contact the appropriate university office for confirmation.',
       time: getCurrentTime(),
@@ -491,7 +492,7 @@ function Chatbot() {
       const sourceImages = sourceMessage?.images || []
 
       const assistantReply = {
-        author: 'MCU Guide',
+        author: ASSISTANT_NAME,
         role: 'assistant',
         text: sourceImages.length > 0
           ? sourceMessage.text
@@ -636,7 +637,7 @@ function Chatbot() {
         updatedAt: 'Just now',
         messages: [
           {
-            author: 'MCU Guide',
+            author: ASSISTANT_NAME,
             role: 'assistant',
             text: defaultAssistantGreeting,
             time: getCurrentTime(),
@@ -717,13 +718,13 @@ function Chatbot() {
         </aside>
         )}
 
-        <section className="mcu-kb-chat" aria-label="Chat with MCU Guide">
+        <section className="mcu-kb-chat" aria-label={`Chat with ${ASSISTANT_NAME}`}>
           {isCompactEmbedMode && (
             <header className="mcu-kb-embed-header">
               <button type="button" aria-label="Back">&lsaquo;</button>
               <span aria-hidden="true"><img src={mcuLogoCircle} alt="" /></span>
               <div>
-                <strong>Centralino bot</strong>
+                <strong>{ASSISTANT_NAME}</strong>
                 <small>I am here to assist you!</small>
               </div>
             </header>
@@ -733,11 +734,11 @@ function Chatbot() {
             <div className="mcu-kb-stream">
               <MessageBubble
                 message={{
-                  author: 'Centralino bot',
+                  author: ASSISTANT_NAME,
                   role: 'assistant',
                   text: 'This chatbot embed is not authorized for this website.',
                   time: getCurrentTime(),
-                  source: 'MCU Guide',
+                  source: ASSISTANT_NAME,
                 }}
                 currentUser={currentUser}
               />
@@ -768,7 +769,7 @@ function Chatbot() {
                 <div className="avatar" aria-hidden="true"><img src={mcuLogoCircle} alt="" /></div>
                 <div className="bubble typing-bubble">
                   <div className="message-meta">
-                    <strong>MCU Guide</strong>
+                    <strong>{ASSISTANT_NAME}</strong>
                     <span>typing...</span>
                   </div>
                   <div className="typing-dots" aria-hidden="true">
