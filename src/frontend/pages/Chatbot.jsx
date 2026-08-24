@@ -451,12 +451,6 @@ function Chatbot() {
       return
     }
 
-    if (!isLoggedIn()) {
-      setIsAuthenticated(false)
-      openLoginModal()
-      return
-    }
-
     submitLockRef.current = true
 
     if (isLoggedIn() && !isAuthenticated) {

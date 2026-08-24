@@ -147,8 +147,12 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
           { key: 'title', label: 'Document', className: 'fw-bold' },
           { key: 'type', label: 'Type', render: (document) => <TypeBadge value={document.type} /> },
           { key: 'scope', label: 'Scope', className: 'text-capitalize' },
-          { key: 'topicCategory', label: 'Topic Category' },
-          { key: 'owner', label: 'Owner' },
+          {
+            key: 'accessLevel',
+            label: 'Access',
+            render: (document) => document.accessLevel === 'internal' ? 'Internal' : 'External',
+          },
+          { key: 'owner', label: 'Uploader' },
           { key: 'status', label: 'Status', render: (document) => <StatusBadge value={document.status} /> },
           { key: 'date', label: 'Date' },
           {
@@ -226,8 +230,8 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
                     <strong>{selectedDocument.siteScope || 'general'}</strong>
                   </div>
                   <div>
-                    <span>Topic Category</span>
-                    <strong>{selectedDocument.topicCategory || 'Automatic'}</strong>
+                    <span>Document Access</span>
+                    <strong>{selectedDocument.accessLevel === 'internal' ? 'Internal / Login Required' : 'External / Public'}</strong>
                   </div>
                   <div>
                     <span>Suggested Prompt</span>
@@ -287,5 +291,4 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
 }
 
 export default DocumentsPage
-
 

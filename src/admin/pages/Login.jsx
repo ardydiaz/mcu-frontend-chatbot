@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PublicClientApplication } from '@azure/msal-browser'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { loginWithCredentials } from '../../services/authService'
 import { setStoredSession } from '../../services/apiClient'
-import { fieldLabelClass, inputClass, microsoftButtonClass, primaryButtonFullClass } from '../ui/classes'
+import { microsoftButtonClass } from '../ui/classes'
 import mcuLogoPurple from '../../assets/mcu-logo-purple.png'
 import mcuSmallLogo from '../../assets/mcu-sm-logo.png'
 
@@ -74,8 +73,6 @@ function Login() {
   const [searchParams] = useSearchParams()
   const shouldStartMicrosoftSignIn = searchParams.get('ms365') === '1'
   const requestedReturnPath = getSafeReturnPath(searchParams.get('returnTo'))
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [authMessage, setAuthMessage] = useState('')
   const [isSigningIn, setIsSigningIn] = useState(false)
@@ -223,25 +220,6 @@ function Login() {
     }
   }, [navigate, requestedReturnPath, searchParams])
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
-    setAuthMessage('')
-    setIsSigningIn(true)
-
-    try {
-      await loginWithCredentials({
-        email: email.trim(),
-        password,
-      })
-      navigate('/admin')
-    } catch (loginError) {
-      setError(loginError.message || 'Invalid email or password.')
-    } finally {
-      setIsSigningIn(false)
-    }
-  }
-
   function handleMicrosoftSignIn() {
     if (!msalInstance) {
       setError(microsoftUnavailableMessage || 'Microsoft sign-in is not available in this browser.')
@@ -325,39 +303,8 @@ function Login() {
           <img className="login-brand-logo" src={mcuLogoPurple} alt="Manila Central University" />
         </div>
 
-        <form className="stack-form" onSubmit={handleSubmit}>
-          <label className={fieldLabelClass}>
-            Email
-            <input
-              className={inputClass}
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="username" placeholder="Email @mcu.edu.ph"
-            />
-          </label>
-          <label className={fieldLabelClass}>
-            Password
-            <input
-              className={inputClass}
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password" placeholder="Password"
-            />
-          </label>
-
-          {error && <p className="form-error">{error}</p>}
-          {authMessage && <p className="form-note">{authMessage}</p>}
-
-          <button className={primaryButtonFullClass} type="submit" disabled={isSigningIn}>
-            {isSigningIn ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <div className="login-divider">
-          <span>or</span>
-        </div>
+        {error && <p className="form-error">{error}</p>}
+        {authMessage && <p className="form-note">{authMessage}</p>}
 
         <button
           className={microsoftButtonClass}

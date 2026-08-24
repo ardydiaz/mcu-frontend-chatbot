@@ -14,17 +14,6 @@ const toast = Swal.mixin({
   timerProgressBar: true,
 })
 
-const topicCategoryOptions = [
-  'Automatic',
-  'Admissions',
-  'Finance',
-  'Academics',
-  'Services',
-  'Student Life',
-  'Knowledge Base',
-]
-
-
 function formatFileSize(size) {
   if (!size) {
     return '0 KB'
@@ -48,7 +37,7 @@ function isAllowedDocument(file) {
 function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
   const [title, setTitle] = useState('')
   const [siteScope, setSiteScope] = useState('general')
-  const [topicCategory, setTopicCategory] = useState('Automatic')
+  const [accessLevel, setAccessLevel] = useState('external')
   const [suggestedPrompt, setSuggestedPrompt] = useState('')
   const [showAsTopic, setShowAsTopic] = useState(true)
   const [siteScopeOptions, setSiteScopeOptions] = useState(fallbackScopeOptions)
@@ -106,6 +95,21 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
     selectFile(event.dataTransfer.files?.[0])
   }
 
+  function resetForm() {
+    setTitle('')
+    setSiteScope('general')
+    setAccessLevel('external')
+    setSuggestedPrompt('')
+    setShowAsTopic(true)
+    setFile(null)
+    setUploadProgress(100)
+    setUploadPhase('complete')
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
@@ -123,25 +127,17 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
       await uploadDocument({
         title,
         siteScope,
-        topicCategory: topicCategory === 'Automatic' ? '' : topicCategory,
+        accessLevel,
+        topicCategory: '',
         suggestedPrompt,
         showAsTopic,
         file,
         onProgress: setUploadProgress,
         onUploadComplete: () => setUploadPhase('processing'),
       })
-      setTitle('')
-      setSiteScope('general')
-      setTopicCategory('Automatic')
-      setSuggestedPrompt('')
-      setShowAsTopic(true)
-      setFile(null)
-      setUploadProgress(100)
-      setUploadPhase('complete')
+
+      resetForm()
       onUploaded?.()
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
       toast.fire({
         icon: 'success',
         title: 'Document uploaded successfully.',
@@ -221,13 +217,17 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
           </label>
 
           <label className={fieldLabelClass}>
-            Topic Category
-            <select className={inputClass} value={topicCategory} onChange={(event) => setTopicCategory(event.target.value)}>
-              {topicCategoryOptions.map((option) => (
-                <option value={option === 'Automatic' ? 'Automatic' : option} key={option}>{option}</option>
-              ))}
+            Document Access
+            <select className={inputClass} value={accessLevel} onChange={(event) => setAccessLevel(event.target.value)}>
+              <option value="external">External / Public</option>
+              <option value="internal">Internal / Login Required</option>
             </select>
           </label>
+
+          <div className="rounded-xl border border-[#FFBA2E]/40 bg-[#fff7df] px-4 py-3 text-sm text-[#4b235f]">
+            <strong className="block text-[#300045]">For mixed public/internal content</strong>
+            Upload the public version first, then upload the internal version separately as Login Required.
+          </div>
 
           <label className={fieldLabelClass}>
             Suggested Prompt

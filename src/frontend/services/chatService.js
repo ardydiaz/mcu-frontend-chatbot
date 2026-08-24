@@ -22,9 +22,7 @@ async function fetchChatbotTopics(scope = 'general', embedOrigin = window.locati
     isEmbed: isEmbed ? '1' : '0',
   })
 
-  return apiFetch(`/api/chat/topics?${params.toString()}`, {
-    auth: false,
-  })
+  return apiFetch(`/api/chat/topics?${params.toString()}`)
 }
 
 export { askChatbot, fetchChatbotTopics }
