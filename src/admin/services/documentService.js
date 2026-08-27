@@ -25,7 +25,6 @@ function mapDocument(document) {
     title: document.title,
     owner: document.uploaded_by || 'Unknown',
     scope: document.site_scope || 'general',
-    accessLevel: document.access_level || 'external',
     topicCategory: document.topic_category || 'Automatic',
     suggestedPrompt: document.suggested_prompt || '',
     showAsTopic: document.show_as_topic !== 0,
@@ -63,7 +62,6 @@ async function fetchDocumentsFromApi({ page, pageSize, search, status }) {
 async function uploadDocument({
   title,
   siteScope = 'general',
-  accessLevel = 'external',
   topicCategory = '',
   suggestedPrompt = '',
   showAsTopic = true,
@@ -79,7 +77,6 @@ async function uploadDocument({
   }
 
   formData.append('siteScope', siteScope)
-  formData.append('accessLevel', accessLevel)
   formData.append('topicCategory', topicCategory.trim())
   formData.append('suggestedPrompt', suggestedPrompt.trim())
   formData.append('showAsTopic', showAsTopic ? '1' : '0')

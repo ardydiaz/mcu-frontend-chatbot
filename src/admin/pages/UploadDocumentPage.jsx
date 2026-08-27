@@ -37,7 +37,6 @@ function isAllowedDocument(file) {
 function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
   const [title, setTitle] = useState('')
   const [siteScope, setSiteScope] = useState('general')
-  const [accessLevel, setAccessLevel] = useState('external')
   const [suggestedPrompt, setSuggestedPrompt] = useState('')
   const [showAsTopic, setShowAsTopic] = useState(true)
   const [siteScopeOptions, setSiteScopeOptions] = useState(fallbackScopeOptions)
@@ -98,7 +97,6 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
   function resetForm() {
     setTitle('')
     setSiteScope('general')
-    setAccessLevel('external')
     setSuggestedPrompt('')
     setShowAsTopic(true)
     setFile(null)
@@ -127,7 +125,6 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
       await uploadDocument({
         title,
         siteScope,
-        accessLevel,
         topicCategory: '',
         suggestedPrompt,
         showAsTopic,
@@ -215,19 +212,6 @@ function UploadDocumentPage({ isModal = false, onClose, onUploaded }) {
               ))}
             </select>
           </label>
-
-          <label className={fieldLabelClass}>
-            Document Access
-            <select className={inputClass} value={accessLevel} onChange={(event) => setAccessLevel(event.target.value)}>
-              <option value="external">External / Public</option>
-              <option value="internal">Internal / Login Required</option>
-            </select>
-          </label>
-
-          <div className="rounded-xl border border-[#FFBA2E]/40 bg-[#fff7df] px-4 py-3 text-sm text-[#4b235f]">
-            <strong className="block text-[#300045]">For mixed public/internal content</strong>
-            Upload the public version first, then upload the internal version separately as Login Required.
-          </div>
 
           <label className={fieldLabelClass}>
             Suggested Prompt
