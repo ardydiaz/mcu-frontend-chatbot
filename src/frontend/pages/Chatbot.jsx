@@ -11,7 +11,7 @@ import {
   isLoggedIn,
 } from '../../services/apiClient'
 import MessageBubble from '../components/MessageBubble'
-import { askChatbot, fetchChatbotTopics } from '../services/chatService'
+import { askChatbot } from '../services/chatService'
 import {
   buildRecentConversations,
   buildSmartSuggestions,
@@ -106,11 +106,9 @@ function Chatbot() {
   const [message, setMessage] = useState('')
   const [isSuggestionOpen, setIsSuggestionOpen] = useState(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
-  const [knowledgeTopics, setKnowledgeTopics] = useState([])
   const [chatThreads, setChatThreads] = useState(initialThreads)
   const [activeThreadId, setActiveThreadId] = useState(initialThreads[0].id)
   const [highlightedMessageKey, setHighlightedMessageKey] = useState('')
-  const [isEmbedAuthorized, setIsEmbedAuthorized] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(() => isLoggedIn() && !isChatbotSessionExpired())
   const [currentUser, setCurrentUser] = useState(() => (
     isLoggedIn() && !isChatbotSessionExpired() ? getStoredUser() || getStoredTokenPayload() || null : null
@@ -138,13 +136,12 @@ function Chatbot() {
   )
   const recentConversations = buildRecentConversations(chatThreads)
   const smartSuggestions = useMemo(
-    () => buildSmartSuggestions(message, knowledgeTopics),
-    [knowledgeTopics, message],
+    () => buildSmartSuggestions(message, []),
+    [message],
   )
   const visibleSmartSuggestions = isCompactEmbedMode ? smartSuggestions.slice(0, 3) : smartSuggestions
   const hasAuthenticatedSession = isAuthenticated || isLoggedIn()
   const hasConversationStarted = activeThread?.messages.some((messageItem) => messageItem.role === 'user') || isTyping
-  const flatKnowledgeTopics = knowledgeTopics.flatMap((group) => group.items || [])
   const headerDisplayName = currentUser?.name || currentUser?.email || 'Student'
   const headerPhotoUrl = currentUser?.photoUrl && currentUser.photoUrl !== brokenHeaderPhotoUrl ? currentUser.photoUrl : ''
   const headerInitials = getInitials(currentUser?.name, currentUser?.email)
@@ -269,35 +266,6 @@ function Chatbot() {
       })
     }
   }, [isAuthenticated])
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadTopics() {
-      try {
-        const data = await fetchChatbotTopics(siteScope, embedOrigin, embedToken, isEmbedMode)
-        const uploadedTopicGroups = data.topicGroups?.filter((group) => group.items?.length) || []
-
-        if (isMounted) {
-          setKnowledgeTopics(uploadedTopicGroups)
-        }
-      } catch (error) {
-        if (isMounted) {
-          if (String(error.message || '').toLowerCase().includes('not authorized')) {
-            setIsEmbedAuthorized(false)
-          } else {
-            setKnowledgeTopics([])
-          }
-        }
-      }
-    }
-
-    loadTopics()
-
-    return () => {
-      isMounted = false
-    }
-  }, [embedOrigin, embedToken, isEmbedMode, siteScope])
 
   useEffect(() => {
     const syncAuthState = () => {
@@ -580,10 +548,6 @@ function Chatbot() {
     }
   }
 
-  function handleQuickAction(value) {
-    submitQuestion(value)
-  }
-
   function handleThreadSelect(threadId) {
     stopTypingTimer()
     setIsTyping(false)
@@ -691,24 +655,29 @@ function Chatbot() {
 
       <section className="mcu-kb-layout">
         {!isEmbedMode && (
-        <aside className="mcu-kb-nav" aria-label="Knowledge topics">
-          <div className="mcu-kb-nav-head">
-            <p>Topics</p>
-            <span>{flatKnowledgeTopics.length} guides</span>
-          </div>
-          <div className="mcu-kb-topic-list">
-            {flatKnowledgeTopics.length === 0 && (
-              <div className="mcu-kb-empty-topics">
-                No uploaded topics are available for this scope yet.
-              </div>
+        <aside className="mcu-kb-insights" aria-label="Conversation context">
+          <section>
+            <p>Current Session</p>
+            <h2>{activeThread.title}</h2>
+            <span>{activeThread.messages.length} messages</span>
+          </section>
+          <section>
+            <p>Recent Conversations</p>
+            {recentConversations.length === 0 && (
+              <small>No recent questions yet.</small>
             )}
-            {flatKnowledgeTopics.map((item) => (
-              <button type="button" key={`${item.label}-${item.prompt}`} onClick={() => handleQuickAction(item.prompt)}>
-                <span>{item.icon}</span>
-                {item.label}
+            {recentConversations.slice(0, 5).map((conversation) => (
+              <button
+                className={conversation.threadId === activeThread.id ? 'active' : ''}
+                type="button"
+                key={conversation.id}
+                onClick={() => handleRecentConversationSelect(conversation)}
+              >
+                <strong>{conversation.title}</strong>
+                <span>{conversation.preview}</span>
               </button>
             ))}
-          </div>
+          </section>
         </aside>
         )}
 
@@ -724,20 +693,6 @@ function Chatbot() {
             </header>
           )}
 
-          {isEmbedMode && !isEmbedAuthorized ? (
-            <div className="mcu-kb-stream">
-              <MessageBubble
-                message={{
-                  author: ASSISTANT_NAME,
-                  role: 'assistant',
-                  text: 'This chatbot embed is not authorized for this website.',
-                  time: getCurrentTime(),
-                  source: ASSISTANT_NAME,
-                }}
-                currentUser={currentUser}
-              />
-            </div>
-          ) : (
           <>
 
           {!isEmbedMode && (
@@ -864,36 +819,8 @@ function Chatbot() {
             </div>
           )}
           </>
-          )}
         </section>
 
-        {!isEmbedMode && (
-        <aside className="mcu-kb-insights" aria-label="Conversation context">
-          <section>
-            <p>Current Session</p>
-            <h2>{activeThread.title}</h2>
-            <span>{activeThread.messages.length} messages</span>
-          </section>
-          <section>
-            <p>Recent Conversations</p>
-            {recentConversations.length === 0 && (
-              <small>No recent questions yet.</small>
-            )}
-            {recentConversations.slice(0, 5).map((conversation) => (
-              <button
-                className={conversation.threadId === activeThread.id ? 'active' : ''}
-                type="button"
-                key={conversation.id}
-                onClick={() => handleRecentConversationSelect(conversation)}
-              >
-                <strong>{conversation.title}</strong>
-                <span>{conversation.preview}</span>
-              </button>
-            ))}
-          </section>
-         
-        </aside>
-        )}
       </section>
     </main>
   )

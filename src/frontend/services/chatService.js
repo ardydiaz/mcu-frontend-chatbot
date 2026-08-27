@@ -14,16 +14,5 @@ async function askChatbot(
   })
 }
 
-async function fetchChatbotTopics(scope = 'general', embedOrigin = window.location.origin, embedToken = '', isEmbed = false) {
-  const params = new URLSearchParams({
-    scope,
-    embedOrigin,
-    embedToken,
-    isEmbed: isEmbed ? '1' : '0',
-  })
-
-  return apiFetch(`/api/chat/topics?${params.toString()}`)
-}
-
-export { askChatbot, fetchChatbotTopics }
+export { askChatbot }
 
