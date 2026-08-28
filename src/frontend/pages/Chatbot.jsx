@@ -15,7 +15,6 @@ import { askChatbot } from '../services/chatService'
 import {
   buildRecentConversations,
   buildSmartSuggestions,
-  defaultAssistantGreeting,
   getCurrentTime,
   getEmbedOrigin,
   getMessagePreview,
@@ -141,6 +140,7 @@ function Chatbot() {
   )
   const visibleSmartSuggestions = isCompactEmbedMode ? smartSuggestions.slice(0, 3) : smartSuggestions
   const hasAuthenticatedSession = isAuthenticated || isLoggedIn()
+  const requiresSsoLogin = !hasAuthenticatedSession
   const hasConversationStarted = activeThread?.messages.some((messageItem) => messageItem.role === 'user') || isTyping
   const headerDisplayName = currentUser?.name || currentUser?.email || 'Student'
   const headerPhotoUrl = currentUser?.photoUrl && currentUser.photoUrl !== brokenHeaderPhotoUrl ? currentUser.photoUrl : ''
@@ -593,15 +593,7 @@ function Chatbot() {
         title: 'New chat',
         topic: 'General',
         updatedAt: 'Just now',
-        messages: [
-          {
-            author: ASSISTANT_NAME,
-            role: 'assistant',
-            text: defaultAssistantGreeting,
-            time: getCurrentTime(),
-            source: 'MCU Knowledge Base',
-          },
-        ],
+        messages: [],
         lastActivityAt: createdAt,
       },
       ...currentThreads,
@@ -610,14 +602,24 @@ function Chatbot() {
     setMessage('')
   }
 
+  function handleChatbotLogout() {
+    clearChatbotSessionState()
+    setIsAuthenticated(false)
+    setCurrentUser(null)
+    setIsLoginModalOpen(false)
+    setIsMicrosoftSigningIn(false)
+    setLoginError('')
+    setToastMessage('You have been logged out.')
+  }
+
   return (
-    <main className={`mcu-kb-shell ${isEmbedMode ? 'is-embed' : ''} ${isCompactEmbedMode ? 'is-compact-embed' : ''} ${!isEmbedMode && !hasConversationStarted ? 'is-empty-chat' : ''}`}>
+    <main className={`mcu-kb-shell ${isEmbedMode ? 'is-embed' : ''} ${isCompactEmbedMode ? 'is-compact-embed' : ''} ${requiresSsoLogin ? 'is-sso-required' : ''} ${!isEmbedMode && !hasConversationStarted ? 'is-empty-chat' : ''}`}>
       {toastMessage && (
         <div className="mcu-kb-toast" role="status" aria-live="polite">
           {toastMessage}
         </div>
       )}
-      {!isEmbedMode && (
+      {!isEmbedMode && !requiresSsoLogin && (
       <header className="mcu-kb-header">
         <div className="mcu-kb-brand">
           <span className="mcu-kb-main-logo" aria-hidden="true">
@@ -648,35 +650,54 @@ function Chatbot() {
           ) : (
             <button type="button" onClick={openLoginModal}>Login</button>
           )}
-          <button type="button" onClick={handleNewChat}>New Chat</button>
+          {!requiresSsoLogin && <button type="button" onClick={handleNewChat}>New Chat</button>}
         </div>
       </header>
       )}
 
       <section className="mcu-kb-layout">
-        {!isEmbedMode && (
+        {!isEmbedMode && !requiresSsoLogin && (
         <aside className="mcu-kb-insights" aria-label="Conversation context">
-          <section>
-            <p>Current Session</p>
-            <h2>{activeThread.title}</h2>
-            <span>{activeThread.messages.length} messages</span>
-          </section>
-          <section>
-            <p>Recent Conversations</p>
+          <section className="mcu-kb-recent-panel">
+            <p>Recents</p>
             {recentConversations.length === 0 && (
               <small>No recent questions yet.</small>
             )}
-            {recentConversations.slice(0, 5).map((conversation) => (
-              <button
-                className={conversation.threadId === activeThread.id ? 'active' : ''}
-                type="button"
-                key={conversation.id}
-                onClick={() => handleRecentConversationSelect(conversation)}
-              >
-                <strong>{conversation.title}</strong>
-                <span>{conversation.preview}</span>
-              </button>
-            ))}
+            <div className="mcu-kb-recent-scroll">
+              {recentConversations.map((conversation) => (
+                <button
+                  className={conversation.threadId === activeThread.id ? 'active' : ''}
+                  type="button"
+                  key={conversation.id}
+                  onClick={() => handleRecentConversationSelect(conversation)}
+                >
+                  <strong>{conversation.title}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="mcu-kb-sidebar-profile" aria-label="Signed-in profile">
+            <div className="mcu-kb-sidebar-profile-main">
+              <span className={`mcu-kb-sidebar-avatar ${headerPhotoUrl ? 'has-photo' : ''}`} aria-hidden="true">
+                {headerPhotoUrl ? (
+                  <img
+                    src={headerPhotoUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onError={() => setBrokenHeaderPhotoUrl(headerPhotoUrl)}
+                  />
+                ) : (
+                  headerInitials
+                )}
+              </span>
+              <div>
+                <strong>{headerDisplayName}</strong>
+                <small>{currentUser?.email || 'Microsoft 365 account'}</small>
+              </div>
+            </div>
+            <button className="mcu-kb-sidebar-logout" type="button" onClick={handleChatbotLogout}>
+              Logout
+            </button>
           </section>
         </aside>
         )}
@@ -695,14 +716,42 @@ function Chatbot() {
 
           <>
 
-          {!isEmbedMode && (
-          <div className="mcu-kb-hero">
-            <div>
-              <h1>Welcome to MCU Knowledge Base</h1>
+          {requiresSsoLogin ? (
+            <section className="mcu-sso-gate" aria-labelledby="mcu-sso-gate-title">
+              <div className="mcu-sso-card">
+                <div className="mcu-sso-card-mark" aria-hidden="true">
+                  <img src={mcuSmallLogo} alt="" />
+                </div>
+                <p>Centralino Bot</p>
+                <h1 id="mcu-sso-gate-title">Sign in to start chatting</h1>
+                <span>
+                  Use your authorized MCU Microsoft 365 account to access the university knowledge assistant.
+                </span>
+                {loginError && <strong className="mcu-sso-error">{loginError}</strong>}
+                <button
+                  className="mcu-sso-button"
+                  type="button"
+                  onClick={handleMicrosoftSignIn}
+                  disabled={isMicrosoftSigningIn}
+                >
+                  <span className="microsoft-mark" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </span>
+                  {isMicrosoftSigningIn ? 'Opening Microsoft 365...' : 'Continue with Microsoft 365'}
+                </button>
+                <small>Secure SSO access for MCU users</small>
+              </div>
+            </section>
+          ) : (
+          <>
+          {!isEmbedMode && !hasConversationStarted && (
+            <div className="mcu-kb-empty-title">
+              Hello! I am Centralino Virtual Assistant. How can I help you today?
             </div>
-          </div>
           )}
-
           <div className="mcu-kb-stream" ref={chatStreamRef}>
             {activeThread.messages.map((messageItem, index) => (
               <div
@@ -778,6 +827,8 @@ function Chatbot() {
             </div>
             <button type="submit" disabled={!message.trim() || isTyping}>Send</button>
           </form>
+          </>
+          )}
           {isLoginModalOpen && (
             <div className="mcu-login-modal-backdrop" role="presentation" onMouseDown={closeLoginModal}>
               <section

@@ -26,15 +26,7 @@ export const initialThreads = [
     title: 'New conversation',
     topic: 'General',
     updatedAt: 'Just now',
-    messages: [
-      {
-        author: 'Centralino Bot',
-        role: 'assistant',
-        text: defaultAssistantGreeting,
-        time: getCurrentTime(),
-        source: 'MCU Knowledge Base',
-      },
-    ],
+    messages: [],
   },
 ]
 
