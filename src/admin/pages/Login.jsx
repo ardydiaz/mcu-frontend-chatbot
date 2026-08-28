@@ -262,7 +262,7 @@ function Login() {
           <div className="mcu-login-modal-brand">
             <img src={mcuSmallLogo} alt="" />
             <div>
-              <p>Centralino Bot</p>
+              <p>Centralino Virtual Assistant</p>
               <h2 id="mcu-chat-login-title">Continue with Microsoft 365</h2>
             </div>
           </div>

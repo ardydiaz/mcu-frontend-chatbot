@@ -10,6 +10,7 @@ import {
   getStoredUser,
   isLoggedIn,
 } from '../../services/apiClient'
+import apiFetch, { API_BASE_URL } from '../../services/apiClient'
 import MessageBubble from '../components/MessageBubble'
 import { askChatbot } from '../services/chatService'
 import {
@@ -32,7 +33,33 @@ const AUTH_SESSION_CREATED_KEY = 'mcuChatbotSessionCreatedAt'
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
 const CHATBOT_LOGIN_TOAST_KEY = 'mcuChatbotLoginToast'
 const animatedPlaceholderPrompt = 'Start typing your question...'
-const ASSISTANT_NAME = 'Centralino Bot'
+const ASSISTANT_NAME = 'Centralino Virtual Assistant'
+
+function formatLibraryDate(value) {
+  if (!value) {
+    return 'Unknown'
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(value))
+}
+
+function getLibraryFileType(filePath = '') {
+  const extension = filePath.split('.').pop()
+
+  return extension ? extension.toUpperCase() : 'DOC'
+}
+
+function getLibraryAssetUrl(url = '') {
+  if (!url) {
+    return ''
+  }
+
+  return new URL(url, API_BASE_URL).toString()
+}
 
 function getLastActivityAt() {
   return Number(localStorage.getItem(AUTH_LAST_ACTIVITY_KEY) || 0)
@@ -117,6 +144,14 @@ function Chatbot() {
   const [loginError, setLoginError] = useState('')
   const [toastMessage, setToastMessage] = useState(getInitialToastMessage)
   const [brokenHeaderPhotoUrl, setBrokenHeaderPhotoUrl] = useState('')
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false)
+  const [libraryDocuments, setLibraryDocuments] = useState([])
+  const [librarySearch, setLibrarySearch] = useState('')
+  const [isLibraryLoading, setIsLibraryLoading] = useState(false)
+  const [libraryError, setLibraryError] = useState('')
+  const [selectedLibraryDocument, setSelectedLibraryDocument] = useState(null)
+  const [isLibraryPreviewLoading, setIsLibraryPreviewLoading] = useState(false)
+  const [libraryPreviewError, setLibraryPreviewError] = useState('')
   const [placeholderCharIndex, setPlaceholderCharIndex] = useState(0)
   const [isPlaceholderDeleting, setIsPlaceholderDeleting] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
@@ -126,6 +161,7 @@ function Chatbot() {
   const submitLockRef = useRef(false)
   const bottomRef = useRef(null)
   const chatStreamRef = useRef(null)
+  const recentPanelRef = useRef(null)
   const activityCounterRef = useRef(initialThreads.length)
   const toastTimerRef = useRef(null)
 
@@ -134,6 +170,21 @@ function Chatbot() {
     [activeThreadId, chatThreads],
   )
   const recentConversations = buildRecentConversations(chatThreads)
+  const filteredLibraryDocuments = useMemo(() => {
+    const normalizedSearch = librarySearch.trim().toLowerCase()
+
+    return libraryDocuments.filter((document) => {
+      const matchesScope = !siteScope || siteScope === 'general' || document.siteScope === siteScope || document.siteScope === 'general'
+      const matchesSearch = !normalizedSearch || [
+        document.title,
+        document.siteScope,
+        document.type,
+        document.uploadedBy,
+      ].join(' ').toLowerCase().includes(normalizedSearch)
+
+      return matchesScope && matchesSearch
+    })
+  }, [libraryDocuments, librarySearch, siteScope])
   const smartSuggestions = useMemo(
     () => buildSmartSuggestions(message, []),
     [message],
@@ -430,7 +481,7 @@ function Chatbot() {
 
     const submittedAt = getNextActivityOrder()
     const userMessage = {
-      author: 'Student',
+      author: currentUser?.name || currentUser?.email || 'User',
       role: 'user',
       text: trimmedQuestion,
       time: getCurrentTime(),
@@ -602,6 +653,65 @@ function Chatbot() {
     setMessage('')
   }
 
+  async function loadLibraryDocuments() {
+    setIsLibraryLoading(true)
+    setLibraryError('')
+
+    try {
+      const data = await apiFetch('/api/documents/library')
+      setLibraryDocuments((data.documents || []).map((document) => ({
+        ...document,
+        type: getLibraryFileType(document.filePath),
+        uploadedDate: formatLibraryDate(document.createdAt),
+      })))
+    } catch (error) {
+      setLibraryError(error.message || 'Unable to load the Library.')
+    } finally {
+      setIsLibraryLoading(false)
+    }
+  }
+
+  function handleLibrarySelect() {
+    setIsLibraryOpen(true)
+
+    if (libraryDocuments.length === 0 && !isLibraryLoading) {
+      loadLibraryDocuments()
+    }
+  }
+
+  function closeLibrary() {
+    setIsLibraryOpen(false)
+    setLibrarySearch('')
+    setSelectedLibraryDocument(null)
+    setIsLibraryPreviewLoading(false)
+    setLibraryPreviewError('')
+  }
+
+  async function handleViewLibraryDocument(document) {
+    setSelectedLibraryDocument(document)
+    setIsLibraryPreviewLoading(true)
+    setLibraryPreviewError('')
+
+    try {
+      const data = await apiFetch(`/api/documents/library/${document.id}/preview`)
+      setSelectedLibraryDocument({
+        ...document,
+        previewFileUrl: data.previewFileUrl,
+        originalFileUrl: data.originalFileUrl || document.fileUrl,
+      })
+    } catch (error) {
+      setLibraryPreviewError(error.message || 'Unable to preview this file.')
+    } finally {
+      setIsLibraryPreviewLoading(false)
+    }
+  }
+
+  function closeLibraryPreview() {
+    setSelectedLibraryDocument(null)
+    setLibraryPreviewError('')
+    setIsLibraryPreviewLoading(false)
+  }
+
   function handleChatbotLogout() {
     clearChatbotSessionState()
     setIsAuthenticated(false)
@@ -627,38 +737,39 @@ function Chatbot() {
           </span>
           <div>
             <strong>Manila Central University</strong>
-            <small>Centralino Bot</small>
+            <small>Centralino Virtual Assistant</small>
           </div>
         </div>
-        <div className="mcu-kb-header-actions">
-          {hasAuthenticatedSession ? (
-            <div className="mcu-kb-user-chip" aria-label={`Signed in as ${headerDisplayName}`}>
-              <span className={`mcu-kb-user-avatar ${headerPhotoUrl ? 'has-photo' : ''}`} aria-hidden="true">
-                {headerPhotoUrl ? (
-                  <img
-                    src={headerPhotoUrl}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    onError={() => setBrokenHeaderPhotoUrl(headerPhotoUrl)}
-                  />
-                ) : (
-                  headerInitials
-                )}
-              </span>
-              <span className="mcu-kb-user-name">{headerDisplayName}</span>
-            </div>
-          ) : (
+        {!hasAuthenticatedSession && (
+          <div className="mcu-kb-header-actions">
             <button type="button" onClick={openLoginModal}>Login</button>
-          )}
-          {!requiresSsoLogin && <button type="button" onClick={handleNewChat}>New Chat</button>}
-        </div>
+          </div>
+        )}
       </header>
       )}
 
       <section className="mcu-kb-layout">
         {!isEmbedMode && !requiresSsoLogin && (
         <aside className="mcu-kb-insights" aria-label="Conversation context">
-          <section className="mcu-kb-recent-panel">
+          <nav className="mcu-kb-sidebar-actions" aria-label="Chat actions">
+            <button type="button" onClick={handleNewChat}>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 5H7a4 4 0 0 0-4 4v8a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4v-5" />
+                <path d="M16 3h5v5" />
+                <path d="M10 14 21 3" />
+              </svg>
+              <span>New chat</span>
+            </button>
+            <button type="button" onClick={handleLibrarySelect}>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
+                <path d="M8 2v15" />
+              </svg>
+              <span>Library</span>
+            </button>
+          </nav>
+          <section className="mcu-kb-recent-panel" ref={recentPanelRef}>
             <p>Recents</p>
             {recentConversations.length === 0 && (
               <small>No recent questions yet.</small>
@@ -676,6 +787,41 @@ function Chatbot() {
               ))}
             </div>
           </section>
+          <nav className="mcu-kb-sidebar-links" aria-label="MCU links">
+            <a href="https://mcu.edu.ph/" target="_blank" rel="noreferrer">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M14 3h7v7" />
+                <path d="M10 14 21 3" />
+                <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+              </svg>
+              <span>MCU Official</span>
+            </a>
+            <a href="https://myportal.mcu.edu.ph/Student/Login.php" target="_blank" rel="noreferrer">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
+                <path d="M8 7h8" />
+                <path d="M8 11h8" />
+              </svg>
+              <span>Student Portal</span>
+            </a>
+            <a href="https://office.com/" target="_blank" rel="noreferrer">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+                <path d="M12 3v18" />
+                <path d="M3 12h18" />
+              </svg>
+              <span>Office 365</span>
+            </a>
+            <a href="https://kb.mcu.edu.ph/" target="_blank" rel="noreferrer"s>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+                <path d="M8 9h8" />
+                <path d="M8 13h5" />
+              </svg>
+              <span>MCU Knowledge Base</span>
+            </a>
+          </nav>
           <section className="mcu-kb-sidebar-profile" aria-label="Signed-in profile">
             <div className="mcu-kb-sidebar-profile-main">
               <span className={`mcu-kb-sidebar-avatar ${headerPhotoUrl ? 'has-photo' : ''}`} aria-hidden="true">
@@ -722,7 +868,7 @@ function Chatbot() {
                 <div className="mcu-sso-card-mark" aria-hidden="true">
                   <img src={mcuSmallLogo} alt="" />
                 </div>
-                <p>Centralino Bot</p>
+                <p>Centralino Virtual Assistant</p>
                 <h1 id="mcu-sso-gate-title">Sign in to start chatting</h1>
                 <span>
                   Use your authorized MCU Microsoft 365 account to access the university knowledge assistant.
@@ -829,6 +975,106 @@ function Chatbot() {
           </form>
           </>
           )}
+          {isLibraryOpen && (
+            <div className="mcu-library-backdrop" role="presentation" onMouseDown={closeLibrary}>
+              <section
+                className="mcu-library-modal"
+                aria-labelledby="mcu-library-title"
+                aria-modal="true"
+                role="dialog"
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <header>
+                  <div>
+                    <p>Library</p>
+                    <h2 id="mcu-library-title">Uploaded knowledge files</h2>
+                  </div>
+                  <button type="button" aria-label="Close Library" onClick={closeLibrary}>
+                    &times;
+                  </button>
+                </header>
+                <div className="mcu-library-toolbar">
+                  <label>
+                    <span>Search files</span>
+                    <input
+                      value={librarySearch}
+                      onChange={(event) => setLibrarySearch(event.target.value)}
+                      placeholder="Search uploaded documents..."
+                    />
+                  </label>
+                  <button type="button" onClick={loadLibraryDocuments} disabled={isLibraryLoading}>
+                    {isLibraryLoading ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+                {libraryError && <p className="mcu-library-error">{libraryError}</p>}
+                <div className={`mcu-library-body ${selectedLibraryDocument ? 'has-preview' : ''}`}>
+                  <div className="mcu-library-list" role="list">
+                    {isLibraryLoading && libraryDocuments.length === 0 && (
+                      <p className="mcu-library-empty">Loading uploaded files...</p>
+                    )}
+                    {!isLibraryLoading && filteredLibraryDocuments.length === 0 && (
+                      <p className="mcu-library-empty">No uploaded files found.</p>
+                    )}
+                    {filteredLibraryDocuments.map((document) => (
+                      <article className={`mcu-library-file ${selectedLibraryDocument?.id === document.id ? 'active' : ''}`} role="listitem" key={document.id}>
+                        <span className="mcu-library-file-icon" aria-hidden="true">
+                          {document.type}
+                        </span>
+                        <div>
+                          <h3>{document.title}</h3>
+                          <p>
+                            <span>{document.uploadedDate}</span>
+                            <span>{document.siteScope || 'general'}</span>
+                            <span>{document.imageCount} images</span>
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => handleViewLibraryDocument(document)}>
+                          View
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                  {selectedLibraryDocument && (
+                    <section className="mcu-library-preview" aria-label="Document preview">
+                      <header>
+                        <div>
+                          <p>Document preview</p>
+                          <h3>{selectedLibraryDocument.title}</h3>
+                          <span>
+                            {selectedLibraryDocument.type} - {selectedLibraryDocument.uploadedDate} - {selectedLibraryDocument.siteScope || 'general'}
+                          </span>
+                        </div>
+                        <button type="button" aria-label="Close document preview" onClick={closeLibraryPreview}>
+                          &times;
+                        </button>
+                      </header>
+                      <div className="mcu-library-original-preview">
+                        {isLibraryPreviewLoading ? (
+                          <p className="mcu-library-empty">Preparing document preview...</p>
+                        ) : libraryPreviewError ? (
+                          <p className="mcu-library-empty">{libraryPreviewError}</p>
+                        ) : selectedLibraryDocument.previewFileUrl ? (
+                          <>
+                            <iframe
+                              title={`${selectedLibraryDocument.title} file preview`}
+                              src={`${getLibraryAssetUrl(selectedLibraryDocument.previewFileUrl)}#zoom=125&view=FitH`}
+                            />
+                            {['DOC', 'DOCX'].includes(selectedLibraryDocument.type) && (
+                              <p>
+                                Preview generated from the uploaded Word file.
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="mcu-library-empty">Preview is not available for this file.</p>
+                        )}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
           {isLoginModalOpen && (
             <div className="mcu-login-modal-backdrop" role="presentation" onMouseDown={closeLoginModal}>
               <section
@@ -844,7 +1090,7 @@ function Chatbot() {
                 <div className="mcu-login-modal-brand">
                   <img src={mcuSmallLogo} alt="" />
                   <div>
-                    <p>Centralino Bot</p>
+                    <p>Centralino Virtual Assistant</p>
                     <h2 id="mcu-login-modal-title">Continue with Microsoft 365</h2>
                   </div>
                 </div>

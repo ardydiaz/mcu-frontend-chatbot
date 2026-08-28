@@ -37,7 +37,7 @@ function ChatBox({
               </div>
               <div className="bubble typing-bubble">
                 <div className="message-meta">
-                  <strong>Centralino Bot</strong>
+                  <strong>Centralino Virtual Assistant</strong>
                   <span>typing...</span>
                 </div>
                 <div className="typing-dots" aria-hidden="true">
@@ -130,4 +130,3 @@ function ChatBox({
 }
 
 export default ChatBox
-

@@ -3220,6 +3220,51 @@ h6 {
   font-size: 0.82rem;
 }
 
+.mcu-kb-sidebar-actions {
+  display: grid;
+  gap: 4px;
+  padding: 0 0 8px;
+}
+
+.mcu-kb-sidebar-actions button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 9px 10px;
+  color: #101828;
+  font-size: 0.9rem;
+  font-weight: 760;
+  text-align: left;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.mcu-kb-sidebar-actions button:hover {
+  background: rgba(100, 43, 135, 0.08);
+}
+
+.mcu-kb-sidebar-actions svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.mcu-kb-sidebar-actions span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .mcu-kb-recent-panel {
   flex: 1 1 auto;
   min-height: 0;
@@ -3262,6 +3307,49 @@ h6 {
 
 .mcu-kb-recent-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 43, 135, 0.38);
+}
+
+.mcu-kb-sidebar-links {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  margin: 14px 0 12px;
+  padding: 8px 0;
+}
+
+.mcu-kb-sidebar-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #344054;
+  font-size: 0.84rem;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.mcu-kb-sidebar-links a:hover {
+  color: var(--mcu-chat-purple-deep);
+  background: rgba(255, 186, 46, 0.14);
+}
+
+.mcu-kb-sidebar-links svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.mcu-kb-sidebar-links span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .mcu-kb-sidebar-profile {
@@ -3339,6 +3427,383 @@ h6 {
 .mcu-kb-insights .mcu-kb-sidebar-logout:hover {
   border-color: rgba(255, 186, 46, 0.75);
   background: linear-gradient(135deg, var(--mcu-chat-gold), var(--mcu-yellow));
+}
+
+.mcu-library-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(48, 0, 69, 0.34);
+  backdrop-filter: blur(10px);
+}
+
+.mcu-library-modal {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  width: min(1400px, calc(100vw - 32px));
+  height: min(900px, calc(100vh - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 186, 46, 0.45);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 186, 46, 0.22), transparent 18rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(250, 247, 252, 0.96));
+  box-shadow: 0 32px 90px rgba(48, 0, 69, 0.28);
+}
+
+.mcu-library-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 28px 30px 18px;
+}
+
+.mcu-library-modal > header p {
+  margin: 0 0 8px;
+  color: var(--mcu-chat-purple);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mcu-library-modal > header h2 {
+  margin: 0;
+  color: var(--mcu-chat-purple-deep);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.mcu-library-modal > header button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  color: var(--mcu-chat-purple-deep);
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: rgba(48, 0, 69, 0.08);
+  cursor: pointer;
+}
+
+.mcu-library-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 0 30px 18px;
+}
+
+.mcu-library-toolbar label {
+  display: grid;
+  gap: 7px;
+}
+
+.mcu-library-toolbar label span {
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.mcu-library-toolbar input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(100, 43, 135, 0.22);
+  border-radius: 14px;
+  padding: 0 15px;
+  color: #101828;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.86);
+  outline: none;
+}
+
+.mcu-library-toolbar input:focus {
+  border-color: rgba(255, 186, 46, 0.78);
+  box-shadow: 0 0 0 4px rgba(255, 186, 46, 0.16);
+}
+
+.mcu-library-toolbar > button,
+.mcu-library-file > button,
+.mcu-library-file > a {
+  align-self: end;
+  display: inline-grid;
+  place-items: center;
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 18px;
+  color: var(--mcu-chat-purple-deep);
+  font-weight: 900;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--mcu-chat-gold), var(--mcu-yellow));
+  box-shadow: 0 14px 28px rgba(255, 186, 46, 0.2);
+  cursor: pointer;
+}
+
+.mcu-library-toolbar > button:disabled,
+.mcu-library-file > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mcu-library-error {
+  margin: 0 30px 14px;
+  border: 1px solid rgba(245, 34, 45, 0.22);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #b42318;
+  font-weight: 800;
+  background: rgba(245, 34, 45, 0.08);
+}
+
+.mcu-library-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 30px 30px;
+}
+
+.mcu-library-body.has-preview {
+  grid-template-columns: minmax(280px, 0.56fr) minmax(720px, 1.44fr);
+}
+
+.mcu-library-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow: auto;
+  min-height: 0;
+  padding: 0;
+}
+
+.mcu-library-file {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid rgba(100, 43, 135, 0.12);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.mcu-library-file.active {
+  border-color: rgba(255, 186, 46, 0.72);
+  background: rgba(255, 247, 223, 0.78);
+}
+
+.mcu-library-file-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 186, 46, 0.4);
+  border-radius: 12px;
+  color: var(--mcu-chat-purple);
+  font-size: 0.7rem;
+  font-weight: 950;
+  background: rgba(255, 247, 223, 0.95);
+}
+
+.mcu-library-file h3 {
+  overflow: hidden;
+  margin: 0;
+  color: #101828;
+  font-size: 0.98rem;
+  font-weight: 880;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mcu-library-file p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 5px 0 0;
+  color: #667085;
+  font-size: 0.78rem;
+}
+
+.mcu-library-file p span:not(:last-child)::after {
+  content: "•";
+  margin-left: 8px;
+  color: rgba(100, 43, 135, 0.42);
+}
+
+.mcu-library-empty {
+  margin: 0;
+  border: 1px dashed rgba(100, 43, 135, 0.18);
+  border-radius: 16px;
+  padding: 26px;
+  color: #667085;
+  font-weight: 760;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.mcu-library-preview {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(100, 43, 135, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.mcu-library-preview header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(100, 43, 135, 0.1);
+  padding: 18px 18px 14px;
+}
+
+.mcu-library-preview header p {
+  margin: 0 0 5px;
+  color: var(--mcu-chat-purple);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mcu-library-preview header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.06rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.mcu-library-preview header span {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+  font-size: 0.78rem;
+}
+
+.mcu-library-preview header button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  color: var(--mcu-chat-purple-deep);
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: rgba(48, 0, 69, 0.08);
+  cursor: pointer;
+}
+
+.mcu-library-preview-content {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.mcu-library-original-preview {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px;
+}
+
+.mcu-library-original-preview iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 650px;
+  border: 1px solid rgba(100, 43, 135, 0.12);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.mcu-library-original-preview p {
+  margin: 0;
+  border: 1px solid rgba(255, 186, 46, 0.34);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #667085;
+  font-size: 0.8rem;
+  font-weight: 760;
+  background: rgba(255, 247, 223, 0.72);
+}
+
+.mcu-library-preview-page {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid rgba(100, 43, 135, 0.08);
+  padding-bottom: 14px;
+}
+
+.mcu-library-preview-page strong {
+  color: var(--mcu-chat-purple);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mcu-library-preview-page p {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.mcu-library-preview-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.mcu-library-preview-images figure {
+  margin: 0;
+  border: 1px solid rgba(100, 43, 135, 0.12);
+  border-radius: 14px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.mcu-library-preview-images img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.mcu-library-preview-images figcaption {
+  margin-top: 7px;
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 760;
+}
+
+@media (max-width: 1180px) {
+  .mcu-library-body.has-preview {
+    grid-template-columns: minmax(240px, 0.7fr) minmax(520px, 1.3fr);
+  }
 }
 
 .chat-rail {
@@ -4984,6 +5449,14 @@ button.avatar-profile:hover {
     padding: 12px;
   }
 
+  .mcu-library-body.has-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .mcu-library-preview {
+    min-height: 420px;
+  }
+
   .mcu-kb-insights {
     display: none;
   }
@@ -5369,6 +5842,20 @@ button.avatar-profile:hover {
   box-shadow: none;
 }
 
+.mcu-kb-shell:not(.is-embed) .mcu-kb-sidebar-actions button,
+.mcu-kb-shell:not(.is-embed) .mcu-kb-sidebar-actions button:hover {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.mcu-kb-shell:not(.is-embed) .mcu-kb-sidebar-actions button {
+  background: transparent;
+}
+
+.mcu-kb-shell:not(.is-embed) .mcu-kb-sidebar-actions button:hover {
+  background: rgba(100, 43, 135, 0.08);
+}
+
 .mcu-kb-shell:not(.is-embed) .mcu-kb-recent-scroll button:hover,
 .mcu-kb-shell:not(.is-embed) .mcu-kb-recent-scroll button.active {
   background: rgba(100, 43, 135, 0.09);
@@ -5406,18 +5893,44 @@ button.avatar-profile:hover {
 }
 
 .mcu-kb-shell:not(.is-embed) .mcu-kb-stream {
-  background:
-    #ffffff;
+  justify-items: center;
+  gap: 38px;
+  padding: 38px 24px 132px;
+  background: #ffffff;
+}
+
+.mcu-kb-shell:not(.is-embed) .mcu-kb-stream > div {
+  width: min(860px, 100%);
+}
+
+.mcu-kb-shell:not(.is-embed) .message.user {
+  grid-template-columns: auto 38px;
+  justify-content: end;
+  justify-self: stretch;
+  width: 100%;
 }
 
 .mcu-kb-shell:not(.is-embed) .message:not(.user) .bubble {
-  border-color: rgba(100, 43, 135, 0.14);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mcu-kb-shell:not(.is-embed) .message:not(.user) .bubble::before {
+  content: none;
 }
 
 .mcu-kb-shell:not(.is-embed) .message.user .bubble {
-  background:
-    radial-gradient(circle at 100% 0, rgba(255, 186, 46, 0.18), transparent 8rem),
-    linear-gradient(135deg, #300045, #642b87);
+  width: fit-content;
+  max-width: min(520px, 76vw);
+  border: 0;
+  border-radius: 20px;
+  padding: 12px 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #300045, #642b87);
+  box-shadow: none;
 }
 
 .mcu-kb-shell:not(.is-embed) .mcu-kb-composer {
@@ -5431,12 +5944,23 @@ button.avatar-profile:hover {
   grid-template-columns: 58px minmax(0, 1fr);
 }
 
+.mcu-kb-shell:not(.is-embed) .message:not(.user),
+.mcu-kb-shell:not(.is-embed) .typing-row {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
 .mcu-kb-shell .message:not(.user) .avatar,
 .mcu-kb-shell .typing-row .avatar {
   width: 58px;
   height: 58px;
   background: #fff;
   box-shadow: 0 8px 18px rgba(48, 0, 69, 0.12);
+}
+
+.mcu-kb-shell:not(.is-embed) .message:not(.user) .avatar,
+.mcu-kb-shell:not(.is-embed) .typing-row .avatar {
+  width: 42px;
+  height: 42px;
 }
 
 .mcu-kb-shell .message:not(.user) .avatar img,

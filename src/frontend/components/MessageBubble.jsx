@@ -401,6 +401,9 @@ function MessageBubble({ message, currentUser }) {
   const isAssistant = message.role === 'assistant'
   const userPhotoUrl = !isAssistant ? currentUser?.photoUrl : ''
   const userInitials = getInitials(currentUser?.name, currentUser?.email)
+  const displayAuthor = !isAssistant && message.author === 'Student'
+    ? currentUser?.name || currentUser?.email || 'User'
+    : message.author
 
   return (
     <article className={`message ${message.role}`}>
@@ -413,7 +416,7 @@ function MessageBubble({ message, currentUser }) {
       </div>
       <div className="bubble">
         <div className="message-meta">
-          <strong>{message.author}</strong>
+          <strong>{displayAuthor}</strong>
           <span>{message.time}</span>
         </div>
         {message.blocks?.length ? <MessageBlocks blocks={message.blocks} /> : <MessageText text={message.text} />}
