@@ -1,10 +1,53 @@
 import { useEffect, useMemo, useState } from 'react'
 import { documents } from '../data/mockAdminData'
 import { API_BASE_URL } from '../../services/apiClient'
-import { fetchDocumentDetails, fetchDocumentsFromApi, PAGE_SIZE } from '../services/documentService'
+import { fetchDocumentDetails, fetchDocumentsFromApi, PAGE_SIZE, saveCapturedDocumentPage } from '../services/documentService'
 import BootstrapDataTable from '../components/BootstrapDataTable'
 import { StatusBadge, TypeBadge } from '../components/Badges'
 import { fieldLabelClass as labelClass, goldSmallButtonClass as smallButtonClass, inputClass, modalButtonClass, paginationButtonClass, primaryButtonClass } from '../ui/classes'
+
+let pdfJsLoadPromise = null
+
+function loadPdfJs() {
+  if (window.pdfjsLib) {
+    return Promise.resolve(window.pdfjsLib)
+  }
+
+  if (!pdfJsLoadPromise) {
+    pdfJsLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+
+      script.src = new URL('/vendor/pdfjs/pdf.js', API_BASE_URL).toString()
+      script.async = true
+      script.onload = () => {
+        if (!window.pdfjsLib) {
+          reject(new Error('PDF renderer could not be loaded.'))
+          return
+        }
+
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('/vendor/pdfjs/pdf.worker.js', API_BASE_URL).toString()
+        resolve(window.pdfjsLib)
+      }
+      script.onerror = () => reject(new Error('PDF renderer could not be loaded.'))
+      document.head.appendChild(script)
+    })
+  }
+
+  return pdfJsLoadPromise
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob)
+        return
+      }
+
+      reject(new Error('Page capture could not be created.'))
+    }, 'image/png')
+  })
+}
 
 function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 }) {
   const [page, setPage] = useState(1)
@@ -16,6 +59,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [isDetailsLoading, setIsDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState('')
+  const [captureStatus, setCaptureStatus] = useState('')
   const isLoading = !compact && serverData.queryKey !== queryKey
   const totalPages = Math.max(1, Math.ceil(serverData.total / PAGE_SIZE))
   const visibleRows = compact ? documents.slice(0, 3) : serverData.rows
@@ -61,6 +105,83 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
     }
   }, [compact, page, queryKey, refreshKey, search, status])
 
+  useEffect(() => {
+    if (!selectedDocument?.previewFileUrl || selectedDocument.imageCount > 0) {
+      return undefined
+    }
+
+    let isCancelled = false
+
+    async function captureDocumentPages() {
+      try {
+        setCaptureStatus('Capturing document pages...')
+
+        const pdfjsLib = await loadPdfJs()
+        const pdf = await pdfjsLib.getDocument(getFileUrl(selectedDocument.previewFileUrl)).promise
+        const savedImages = []
+
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          if (isCancelled) {
+            return
+          }
+
+          setCaptureStatus(`Capturing page ${pageNumber} of ${pdf.numPages}...`)
+
+          const page = await pdf.getPage(pageNumber)
+          const viewport = page.getViewport({ scale: 1.4 })
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')
+
+          canvas.width = Math.floor(viewport.width)
+          canvas.height = Math.floor(viewport.height)
+
+          await page.render({ canvasContext: context, viewport }).promise
+
+          const imageBlob = await canvasToBlob(canvas)
+          const savedImage = await saveCapturedDocumentPage({
+            documentId: selectedDocument.id,
+            pageNumber,
+            imageBlob,
+          })
+
+          savedImages.push(savedImage)
+        }
+
+        if (!isCancelled) {
+          setSelectedDocument((currentDocument) => {
+            if (!currentDocument || currentDocument.id !== selectedDocument.id) {
+              return currentDocument
+            }
+
+            const nextImages = [
+              ...(currentDocument.images || []).filter(
+                (image) => !savedImages.some((savedImage) => savedImage.pageNumber === image.pageNumber),
+              ),
+              ...savedImages,
+            ].sort((a, b) => a.pageNumber - b.pageNumber)
+
+            return {
+              ...currentDocument,
+              imageCount: nextImages.length,
+              images: nextImages,
+            }
+          })
+          setCaptureStatus(`Captured ${savedImages.length} page${savedImages.length === 1 ? '' : 's'} for chatbot responses.`)
+        }
+      } catch (captureError) {
+        if (!isCancelled) {
+          setCaptureStatus(captureError.message || 'Document page capture failed.')
+        }
+      }
+    }
+
+    captureDocumentPages()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedDocument?.id, selectedDocument?.imageCount, selectedDocument?.previewFileUrl])
+
   function handleSearchChange(event) {
     setSearch(event.target.value)
     setPage(1)
@@ -74,6 +195,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
   async function handleViewDocument(document) {
     setSelectedDocument(null)
     setDetailsError('')
+    setCaptureStatus('')
     setIsDetailsLoading(true)
 
     try {
@@ -88,6 +210,7 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
   function closeDetailsModal() {
     setSelectedDocument(null)
     setDetailsError('')
+    setCaptureStatus('')
     setIsDetailsLoading(false)
   }
 
@@ -247,6 +370,23 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
 
                 <div className="document-detail-content">
                   <section>
+                    <h4>Original Document Preview</h4>
+                    {selectedDocument.previewFileUrl ? (
+                      <div className="document-original-preview">
+                        <iframe
+                          title={`${selectedDocument.title} file preview`}
+                          src={`${getFileUrl(selectedDocument.previewFileUrl)}#zoom=125&view=FitH`}
+                        />
+                      </div>
+                    ) : (
+                      <div className="document-image-empty">
+                        {selectedDocument.previewError || 'Original document preview is not available for this file.'}
+                      </div>
+                    )}
+                    {captureStatus && <p className="document-capture-status">{captureStatus}</p>}
+                  </section>
+
+                  <section>
                     <h4>Extracted Text</h4>
                     <div className="document-text-pages">
                       {selectedDocument.textPages?.map((page) => (
@@ -257,20 +397,6 @@ function DocumentsPage({ compact = false, onViewAll, onUpload, refreshKey = 0 })
                       ))}
                     </div>
                   </section>
-
-                  {selectedDocument.images?.length > 0 && (
-                    <section>
-                      <h4>Extracted Images</h4>
-                      <div className="document-image-grid">
-                        {selectedDocument.images.slice(0, 8).map((image) => (
-                          <a href={getFileUrl(image.url)} target="_blank" rel="noreferrer" key={image.id}>
-                            <img src={getFileUrl(image.url)} alt={`Page ${image.pageNumber}`} />
-                            <span>Page {image.pageNumber}</span>
-                          </a>
-                        ))}
-                      </div>
-                    </section>
-                  )}
                 </div>
               </div>
             )}

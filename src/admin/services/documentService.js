@@ -145,6 +145,21 @@ async function fetchDocumentDetails(documentId) {
   return data.document
 }
 
-export { fetchDocumentDetails, fetchDocumentsFromApi, uploadDocument }
+async function saveCapturedDocumentPage({ documentId, pageNumber, imageBlob }) {
+  const id = String(documentId).replace(/^DOC-/, '')
+  const formData = new FormData()
+
+  formData.append('pageNumber', String(pageNumber))
+  formData.append('image', imageBlob, `page-${String(pageNumber).padStart(3, '0')}.png`)
+
+  const data = await apiFetch(`/api/documents/${id}/captured-pages`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  return data.image
+}
+
+export { fetchDocumentDetails, fetchDocumentsFromApi, saveCapturedDocumentPage, uploadDocument }
 
 

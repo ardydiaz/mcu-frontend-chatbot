@@ -22,7 +22,6 @@ import {
   initialThreads,
   isDefaultAssistantGreeting,
   isFollowUpScreenshotRequest,
-  isScreenshotRequest,
 } from '../utils/chatbotUtils'
 
 const AUTH_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000
@@ -509,7 +508,7 @@ function Chatbot() {
       text: data.answer || 'I found a response, but it did not include answer text.',
       blocks: data.answerBlocks,
       images: data.images || [],
-      showImages: isScreenshotRequest(data.question || ''),
+      showImages: (data.images || []).length > 0,
       time: getCurrentTime(),
       source: extraSourceCount > 0 ? `${sourceText}; +${extraSourceCount} more` : sourceText,
     }

@@ -19,6 +19,20 @@ function buildImageUrl(url) {
   return new URL(url, API_BASE_URL).toString()
 }
 
+function isPdfPagePreview(image) {
+  return image?.previewType === 'pdf_page'
+}
+
+function buildPreviewUrl(image) {
+  const fileUrl = buildImageUrl(image.url)
+
+  if (!isPdfPagePreview(image)) {
+    return fileUrl
+  }
+
+  return `${fileUrl}#page=${image.pageNumber || 1}&zoom=125&view=FitH`
+}
+
 function LinkedText({ text }) {
   const parts = String(text || '').split(/(https?:\/\/[^\s]+)/g)
 
@@ -429,7 +443,14 @@ function MessageBubble({ message, currentUser }) {
             <div className="message-screenshot-grid">
               {images.slice(0, 4).map((image, index) => (
                 <button type="button" key={`${image.url}-${index}`} onClick={() => setActiveImage(image)}>
-                  <img src={buildImageUrl(image.url)} alt={`${image.title} page ${image.pageNumber}`} />
+                  {isPdfPagePreview(image) ? (
+                    <span className="message-page-preview-card">
+                      <strong>PDF</strong>
+                      <span>Page {image.pageLabel || image.pageNumber}</span>
+                    </span>
+                  ) : (
+                    <img src={buildImageUrl(image.url)} alt={`${image.title} page ${image.pageNumber}`} />
+                  )}
                 </button>
               ))}
             </div>
@@ -443,7 +464,14 @@ function MessageBubble({ message, currentUser }) {
               <strong>Page preview</strong>
               <button type="button" onClick={() => setActiveImage(null)}>Close</button>
             </header>
-            <img src={buildImageUrl(activeImage.url)} alt={`${activeImage.title} page ${activeImage.pageNumber}`} />
+            {isPdfPagePreview(activeImage) ? (
+              <iframe
+                title={`${activeImage.title} page ${activeImage.pageLabel || activeImage.pageNumber}`}
+                src={buildPreviewUrl(activeImage)}
+              />
+            ) : (
+              <img src={buildImageUrl(activeImage.url)} alt={`${activeImage.title} page ${activeImage.pageNumber}`} />
+            )}
           </section>
         </div>
       )}

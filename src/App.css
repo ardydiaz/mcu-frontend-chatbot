@@ -735,13 +735,15 @@ h6 {
 
 .message-screenshot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fill, 132px);
   gap: 10px;
+  justify-content: start;
 }
 
 .message-screenshot-grid button {
   display: grid;
   gap: 6px;
+  width: 132px;
   border: 1px solid rgba(100, 43, 135, 0.12);
   border-radius: 8px;
   padding: 7px;
@@ -756,10 +758,37 @@ h6 {
 
 .message-screenshot-grid img {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
   object-fit: cover;
   border-radius: 6px;
   background: #fff;
+}
+
+.message-page-preview-card {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  color: var(--mcu-purple-850);
+  background:
+    linear-gradient(135deg, rgba(255, 186, 46, 0.18), rgba(100, 43, 135, 0.08)),
+    #fff;
+}
+
+.message-page-preview-card strong {
+  border-radius: 6px;
+  padding: 4px 7px;
+  color: #fff;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  background: var(--mcu-purple-850);
+}
+
+.message-page-preview-card span {
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .screenshot-modal-backdrop {
@@ -807,6 +836,14 @@ h6 {
   object-fit: contain;
   overflow: auto;
   background: #f8fafc;
+}
+
+.screenshot-modal > iframe {
+  width: 100%;
+  height: min(780px, 82vh);
+  min-height: 0;
+  border: 0;
+  background: #fff;
 }
 
 .message-list {
@@ -5047,6 +5084,33 @@ button.avatar-profile:hover {
   font-size: 1rem;
 }
 
+.document-original-preview {
+  overflow: hidden;
+  border: 1px solid rgba(100, 43, 135, 0.12);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.document-original-preview iframe {
+  display: block;
+  width: 100%;
+  height: min(720px, 70svh);
+  min-height: 520px;
+  border: 0;
+  background: #fff;
+}
+
+.document-capture-status {
+  margin: 10px 0 0;
+  border: 1px solid rgba(255, 186, 46, 0.32);
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: rgba(255, 247, 223, 0.68);
+}
+
 .document-text-pages {
   display: grid;
   gap: 12px;
@@ -5078,8 +5142,8 @@ button.avatar-profile:hover {
 
 .document-image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
 }
 
 .document-image-grid a {
@@ -5097,10 +5161,20 @@ button.avatar-profile:hover {
 
 .document-image-grid img {
   width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
+  min-height: 360px;
+  max-height: 620px;
+  object-fit: contain;
   border-radius: 6px;
-  background: #faf6ff;
+  background: #f8f4fb;
+}
+
+.document-image-empty {
+  border: 1px dashed rgba(100, 43, 135, 0.18);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--muted);
+  font-weight: 650;
+  background: #fffaf7;
 }
 
 .upload-workflow {
