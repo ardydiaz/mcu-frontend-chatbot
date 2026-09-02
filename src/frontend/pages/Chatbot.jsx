@@ -32,8 +32,11 @@ const AUTH_LAST_ACTIVITY_KEY = 'mcuChatbotLastActivityAt'
 const AUTH_SESSION_CREATED_KEY = 'mcuChatbotSessionCreatedAt'
 const MICROSOFT_RETURN_PATH_KEY = 'mcuMicrosoftReturnPath'
 const CHATBOT_LOGIN_TOAST_KEY = 'mcuChatbotLoginToast'
+const CHAT_HISTORY_STORAGE_PREFIX = 'mcuChatbotHistory'
 const animatedPlaceholderPrompt = 'Start typing your question...'
 const ASSISTANT_NAME = 'Centralino Virtual Assistant'
+const MAX_STORED_CHAT_THREADS = 30
+const MAX_MESSAGES_PER_STORED_THREAD = 80
 
 function formatLibraryDate(value) {
   if (!value) {
@@ -59,6 +62,69 @@ function getLibraryAssetUrl(url = '') {
   }
 
   return new URL(url, API_BASE_URL).toString()
+}
+
+function getChatHistoryUserKey(user) {
+  return String(user?.email || user?.id || 'guest')
+    .toLowerCase()
+    .replace(/[^a-z0-9@._-]/g, '_')
+}
+
+function getChatHistoryStorageKey(user, scope = 'general') {
+  return `${CHAT_HISTORY_STORAGE_PREFIX}:${getChatHistoryUserKey(user)}:${scope || 'general'}`
+}
+
+function normalizeStoredThreads(value) {
+  if (!Array.isArray(value) || value.length === 0) {
+    return initialThreads
+  }
+
+  const threads = value
+    .filter((thread) => thread?.id)
+    .map((thread) => ({
+      id: String(thread.id),
+      title: thread.title || 'New chat',
+      topic: thread.topic || 'General',
+      updatedAt: thread.updatedAt || 'Just now',
+      lastActivityAt: Number(thread.lastActivityAt || 0),
+      messages: Array.isArray(thread.messages)
+        ? thread.messages.slice(-MAX_MESSAGES_PER_STORED_THREAD)
+        : [],
+    }))
+
+  return threads.length > 0 ? threads : initialThreads
+}
+
+function loadStoredChatThreads(user, scope) {
+  if (!user) {
+    return initialThreads
+  }
+
+  try {
+    const rawValue = localStorage.getItem(getChatHistoryStorageKey(user, scope))
+    return normalizeStoredThreads(JSON.parse(rawValue || '[]'))
+  } catch {
+    return initialThreads
+  }
+}
+
+function saveStoredChatThreads(user, scope, threads) {
+  if (!user) {
+    return
+  }
+
+  const storedThreads = normalizeStoredThreads(threads)
+    .filter((thread) => thread.messages.length > 0 || !['New chat', 'New conversation'].includes(thread.title))
+    .slice(0, MAX_STORED_CHAT_THREADS)
+
+  try {
+    localStorage.setItem(
+      getChatHistoryStorageKey(user, scope),
+      JSON.stringify(storedThreads.length > 0 ? storedThreads : initialThreads),
+    )
+  } catch {
+    // Ignore storage quota/private mode errors. Chat can continue without local history.
+  }
 }
 
 function getLastActivityAt() {
@@ -164,6 +230,7 @@ function Chatbot() {
   const recentPanelRef = useRef(null)
   const activityCounterRef = useRef(initialThreads.length)
   const toastTimerRef = useRef(null)
+  const loadedHistoryKeyRef = useRef('')
 
   const activeThread = useMemo(
     () => chatThreads.find((thread) => thread.id === activeThreadId) ?? chatThreads[0],
@@ -197,6 +264,39 @@ function Chatbot() {
   const headerPhotoUrl = currentUser?.photoUrl && currentUser.photoUrl !== brokenHeaderPhotoUrl ? currentUser.photoUrl : ''
   const headerInitials = getInitials(currentUser?.name, currentUser?.email)
   const placeholderText = animatedPlaceholderPrompt.slice(0, placeholderCharIndex)
+  const chatHistoryStorageKey = hasAuthenticatedSession && currentUser
+    ? getChatHistoryStorageKey(currentUser, siteScope)
+    : ''
+
+  useEffect(() => {
+    let loadTimer = null
+
+    if (!chatHistoryStorageKey || !currentUser) {
+      loadedHistoryKeyRef.current = ''
+      loadTimer = window.setTimeout(() => {
+        setChatThreads(initialThreads)
+        setActiveThreadId(initialThreads[0].id)
+      }, 0)
+      return () => window.clearTimeout(loadTimer)
+    }
+
+    loadTimer = window.setTimeout(() => {
+      const storedThreads = loadStoredChatThreads(currentUser, siteScope)
+      setChatThreads(storedThreads)
+      setActiveThreadId(storedThreads[0]?.id || initialThreads[0].id)
+      loadedHistoryKeyRef.current = chatHistoryStorageKey
+    }, 0)
+
+    return () => window.clearTimeout(loadTimer)
+  }, [chatHistoryStorageKey, currentUser, siteScope])
+
+  useEffect(() => {
+    if (!chatHistoryStorageKey || !currentUser || loadedHistoryKeyRef.current !== chatHistoryStorageKey) {
+      return
+    }
+
+    saveStoredChatThreads(currentUser, siteScope, chatThreads)
+  }, [chatHistoryStorageKey, chatThreads, currentUser, siteScope])
 
   useEffect(() => {
     return () => {
