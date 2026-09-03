@@ -505,7 +505,7 @@ function Chatbot() {
         url: source.previewFileUrl,
         previewType: source.previewType || 'pdf_page',
       }))
-    const previewImages = data.images?.length ? data.images : sourcePreviewImages
+    const previewImages = sourcePreviewImages.length ? sourcePreviewImages : data.images || []
     const sourceText = data.sources?.length
       ? data.sources
         .slice(0, 3)
