@@ -20,11 +20,12 @@ function buildImageUrl(url) {
 }
 
 function isPdfPagePreview(image) {
-  return image?.previewType === 'pdf_page'
+  return image?.previewType === 'pdf_page' || Boolean(image?.documentId)
 }
 
 function buildPreviewUrl(image) {
-  const fileUrl = buildImageUrl(image.url)
+  const previewUrl = image?.previewFileUrl || (image?.documentId ? `/api/documents/${image.documentId}/preview-file` : image?.url)
+  const fileUrl = buildImageUrl(previewUrl)
 
   if (!isPdfPagePreview(image)) {
     return fileUrl
