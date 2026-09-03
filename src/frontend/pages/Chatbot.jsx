@@ -495,14 +495,14 @@ function Chatbot() {
 
   function buildApiAssistantReply(data) {
     const sourcePreviewImages = (data.sources || [])
-      .filter((source) => source.previewFileUrl)
+      .filter((source) => source.documentId || source.previewFileUrl)
       .map((source) => ({
         documentId: source.documentId,
         title: source.title,
         pageNumber: source.pageNumber,
         printedPageNumber: source.printedPageNumber,
         pageLabel: source.pageLabel,
-        url: source.previewFileUrl,
+        url: source.previewFileUrl || `/api/documents/${source.documentId}/preview-file`,
         previewType: source.previewType || 'pdf_page',
       }))
     const previewImages = sourcePreviewImages.length ? sourcePreviewImages : data.images || []

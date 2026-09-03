@@ -24,7 +24,11 @@ function getPreviewDocumentId(image) {
     return image.documentId
   }
 
-  return String(image?.url || '').match(/\/storage\/images\/(\d+)\//)?.[1] || null
+  const url = String(image?.url || '')
+
+  return url.match(/\/storage\/images\/(\d+)\//)?.[1]
+    || url.match(/\/api\/documents\/(\d+)\/preview-file/)?.[1]
+    || null
 }
 
 function isPdfPagePreview(image) {
