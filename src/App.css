@@ -803,7 +803,7 @@ h6 {
 
 .screenshot-modal {
   width: min(920px, 94vw);
-  max-height: 92vh;
+  height: min(860px, 92vh);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
@@ -830,18 +830,24 @@ h6 {
   background: #fff;
 }
 
-.screenshot-modal > img {
-  width: 100%;
+.screenshot-modal-body {
   min-height: 0;
-  object-fit: contain;
   overflow: auto;
   background: #f8fafc;
 }
 
-.screenshot-modal > iframe {
+.screenshot-modal-body > img {
+  display: block;
   width: 100%;
-  height: min(780px, 82vh);
-  min-height: 0;
+  height: auto;
+  min-height: 100%;
+  object-fit: contain;
+}
+
+.screenshot-modal-body > iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 720px;
   border: 0;
   background: #fff;
 }

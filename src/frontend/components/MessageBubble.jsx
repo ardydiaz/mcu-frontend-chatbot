@@ -465,12 +465,16 @@ function MessageBubble({ message, currentUser }) {
               <button type="button" onClick={() => setActiveImage(null)}>Close</button>
             </header>
             {isPdfPagePreview(activeImage) ? (
-              <iframe
-                title={`${activeImage.title} page ${activeImage.pageLabel || activeImage.pageNumber}`}
-                src={buildPreviewUrl(activeImage)}
-              />
+              <div className="screenshot-modal-body">
+                <iframe
+                  title={`${activeImage.title} page ${activeImage.pageLabel || activeImage.pageNumber}`}
+                  src={buildPreviewUrl(activeImage)}
+                />
+              </div>
             ) : (
-              <img src={buildImageUrl(activeImage.url)} alt={`${activeImage.title} page ${activeImage.pageNumber}`} />
+              <div className="screenshot-modal-body">
+                <img src={buildImageUrl(activeImage.url)} alt={`${activeImage.title} page ${activeImage.pageNumber}`} />
+              </div>
             )}
           </section>
         </div>
