@@ -494,6 +494,18 @@ function Chatbot() {
   }
 
   function buildApiAssistantReply(data) {
+    const sourcePreviewImages = (data.sources || [])
+      .filter((source) => source.previewFileUrl)
+      .map((source) => ({
+        documentId: source.documentId,
+        title: source.title,
+        pageNumber: source.pageNumber,
+        printedPageNumber: source.printedPageNumber,
+        pageLabel: source.pageLabel,
+        url: source.previewFileUrl,
+        previewType: source.previewType || 'pdf_page',
+      }))
+    const previewImages = data.images?.length ? data.images : sourcePreviewImages
     const sourceText = data.sources?.length
       ? data.sources
         .slice(0, 3)
@@ -507,8 +519,8 @@ function Chatbot() {
       role: 'assistant',
       text: data.answer || 'I found a response, but it did not include answer text.',
       blocks: data.answerBlocks,
-      images: data.images || [],
-      showImages: (data.images || []).length > 0,
+      images: previewImages,
+      showImages: previewImages.length > 0,
       time: getCurrentTime(),
       source: extraSourceCount > 0 ? `${sourceText}; +${extraSourceCount} more` : sourceText,
     }
