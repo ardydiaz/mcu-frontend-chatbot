@@ -19,12 +19,21 @@ function buildImageUrl(url) {
   return new URL(url, API_BASE_URL).toString()
 }
 
+function getPreviewDocumentId(image) {
+  if (image?.documentId) {
+    return image.documentId
+  }
+
+  return String(image?.url || '').match(/\/storage\/images\/(\d+)\//)?.[1] || null
+}
+
 function isPdfPagePreview(image) {
-  return image?.previewType === 'pdf_page' || Boolean(image?.documentId)
+  return image?.previewType === 'pdf_page' || Boolean(getPreviewDocumentId(image))
 }
 
 function buildPreviewUrl(image) {
-  const previewUrl = image?.previewFileUrl || (image?.documentId ? `/api/documents/${image.documentId}/preview-file` : image?.url)
+  const documentId = getPreviewDocumentId(image)
+  const previewUrl = image?.previewFileUrl || (documentId ? `/api/documents/${documentId}/preview-file` : image?.url)
   const fileUrl = buildImageUrl(previewUrl)
 
   if (!isPdfPagePreview(image)) {
