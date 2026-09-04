@@ -3325,13 +3325,114 @@ h6 {
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 6px;
+  overflow-x: visible;
+  padding-right: 10px;
 }
 
 .mcu-kb-recent-scroll button {
   width: 100%;
   min-width: 0;
+}
+
+.mcu-kb-recent-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+}
+
+.mcu-kb-recent-item.is-menu-open {
+  grid-template-rows: auto auto;
+}
+
+.mcu-kb-recent-item:hover,
+.mcu-kb-recent-item.active,
+.mcu-kb-recent-item.is-menu-open {
+  background: rgba(100, 43, 135, 0.09);
+}
+
+.mcu-kb-recent-scroll .mcu-kb-recent-title {
+  min-height: 36px;
+  padding-right: 4px;
+  background: transparent;
+}
+
+.mcu-kb-recent-scroll .mcu-kb-recent-title:hover {
+  background: transparent;
+}
+
+.mcu-kb-recent-menu-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  opacity: 0;
+}
+
+.mcu-kb-recent-item:hover .mcu-kb-recent-menu-button,
+.mcu-kb-recent-item.is-menu-open .mcu-kb-recent-menu-button {
+  opacity: 1;
+}
+
+.mcu-kb-recent-menu-button span {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.mcu-kb-recent-menu {
+  position: static;
+  z-index: 30;
+  grid-column: 1 / -1;
+  width: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin: 1px 6px 7px;
+  padding: 6px;
+  background: #302a38;
+  box-shadow: 0 10px 24px rgba(48, 0, 69, 0.18);
+}
+
+.mcu-kb-recent-scroll .mcu-kb-recent-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #ff5f57;
+  background: transparent;
+  text-align: left;
+}
+
+.mcu-kb-recent-scroll .mcu-kb-recent-menu button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mcu-kb-recent-scroll .mcu-kb-recent-menu button span {
+  display: inline;
+  margin: 0;
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mcu-kb-recent-delete svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .mcu-kb-recent-scroll::-webkit-scrollbar {

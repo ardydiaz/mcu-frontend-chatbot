@@ -126,6 +126,31 @@ function saveStoredChatThreads(user, scope, threads) {
   }
 }
 
+function isUnsavedEmptyThread(thread) {
+  return thread.messages.length === 0 && ['New chat', 'New conversation'].includes(thread.title)
+}
+
+function createEmptyChatThread(id = `chat-${Date.now()}`) {
+  return {
+    id,
+    title: 'New chat',
+    topic: 'General',
+    updatedAt: 'Just now',
+    messages: [],
+    lastActivityAt: 0,
+  }
+}
+
+function prepareThreadsForFreshStart(threads) {
+  const savedThreads = normalizeStoredThreads(threads).filter((thread) => !isUnsavedEmptyThread(thread))
+  const freshThread = createEmptyChatThread(`chat-${Date.now()}`)
+
+  return {
+    activeThreadId: freshThread.id,
+    threads: [freshThread, ...savedThreads],
+  }
+}
+
 function getLastActivityAt() {
   return Number(localStorage.getItem(AUTH_LAST_ACTIVITY_KEY) || 0)
 }
@@ -220,6 +245,7 @@ function Chatbot() {
   const [placeholderCharIndex, setPlaceholderCharIndex] = useState(0)
   const [isPlaceholderDeleting, setIsPlaceholderDeleting] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
+  const [openRecentMenuId, setOpenRecentMenuId] = useState('')
   const typingTimerRef = useRef(null)
   const highlightTimerRef = useRef(null)
   const inactivityTimerRef = useRef(null)
@@ -281,8 +307,10 @@ function Chatbot() {
 
     loadTimer = window.setTimeout(() => {
       const storedThreads = loadStoredChatThreads(currentUser, siteScope)
-      setChatThreads(storedThreads)
-      setActiveThreadId(storedThreads[0]?.id || initialThreads[0].id)
+      const freshStart = prepareThreadsForFreshStart(storedThreads)
+
+      setChatThreads(freshStart.threads)
+      setActiveThreadId(freshStart.activeThreadId)
       loadedHistoryKeyRef.current = chatHistoryStorageKey
     }, 0)
 
@@ -316,6 +344,22 @@ function Chatbot() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!openRecentMenuId) {
+      return undefined
+    }
+
+    const closeRecentMenu = () => setOpenRecentMenuId('')
+
+    window.addEventListener('click', closeRecentMenu)
+    window.addEventListener('keydown', closeRecentMenu)
+
+    return () => {
+      window.removeEventListener('click', closeRecentMenu)
+      window.removeEventListener('keydown', closeRecentMenu)
+    }
+  }, [openRecentMenuId])
 
   useEffect(() => {
     const isComplete = placeholderCharIndex === animatedPlaceholderPrompt.length
@@ -731,6 +775,7 @@ function Chatbot() {
     const messageKey = `${conversation.threadId}-${conversation.messageIndex}`
 
     handleThreadSelect(conversation.threadId)
+    setOpenRecentMenuId('')
     setHighlightedMessageKey(messageKey)
 
     if (highlightTimerRef.current) {
@@ -745,19 +790,34 @@ function Chatbot() {
     scrollToThreadMessage(conversation.threadId, conversation.messageIndex)
   }
 
+  function handleDeleteRecentConversation(conversation) {
+    const shouldResetActiveThread = conversation.threadId === activeThreadId
+    const freshThread = shouldResetActiveThread ? createEmptyChatThread(`chat-${getNextActivityOrder()}`) : null
+
+    stopTypingTimer()
+    setIsTyping(false)
+    setOpenRecentMenuId('')
+    setHighlightedMessageKey('')
+    setChatThreads((currentThreads) => {
+      const remainingThreads = currentThreads.filter((thread) => thread.id !== conversation.threadId)
+
+      return freshThread
+        ? [freshThread, ...remainingThreads.filter((thread) => !isUnsavedEmptyThread(thread))]
+        : remainingThreads
+    })
+
+    if (freshThread) {
+      setActiveThreadId(freshThread.id)
+      setMessage('')
+    }
+  }
+
   function handleNewChat() {
     const createdAt = getNextActivityOrder()
     const id = `chat-${createdAt}`
 
     setChatThreads((currentThreads) => [
-      {
-        id,
-        title: 'New chat',
-        topic: 'General',
-        updatedAt: 'Just now',
-        messages: [],
-        lastActivityAt: createdAt,
-      },
+      createEmptyChatThread(id),
       ...currentThreads,
     ])
     setActiveThreadId(id)
@@ -887,14 +947,55 @@ function Chatbot() {
             )}
             <div className="mcu-kb-recent-scroll">
               {recentConversations.map((conversation) => (
-                <button
-                  className={conversation.threadId === activeThread.id ? 'active' : ''}
-                  type="button"
+                <div
+                  className={`mcu-kb-recent-item ${conversation.threadId === activeThread.id ? 'active' : ''} ${openRecentMenuId === conversation.id ? 'is-menu-open' : ''}`}
                   key={conversation.id}
-                  onClick={() => handleRecentConversationSelect(conversation)}
                 >
-                  <strong>{conversation.title}</strong>
-                </button>
+                  <button
+                    className="mcu-kb-recent-title"
+                    type="button"
+                    onClick={() => handleRecentConversationSelect(conversation)}
+                  >
+                    <strong>{conversation.title}</strong>
+                  </button>
+                  <button
+                    className="mcu-kb-recent-menu-button"
+                    type="button"
+                    aria-label={`Conversation options for ${conversation.title}`}
+                    aria-expanded={openRecentMenuId === conversation.id}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setOpenRecentMenuId((currentId) => currentId === conversation.id ? '' : conversation.id)
+                    }}
+                  >
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                  </button>
+                  {openRecentMenuId === conversation.id && (
+                    <div
+                      className="mcu-kb-recent-menu"
+                      role="menu"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        className="mcu-kb-recent-delete"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleDeleteRecentConversation(conversation)}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </section>
