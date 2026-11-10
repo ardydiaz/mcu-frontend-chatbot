@@ -2169,7 +2169,7 @@ h6 {
   justify-content: space-between;
   gap: 18px;
   border-bottom: 1px solid rgba(255, 186, 46, 0.28);
-  padding: 16px 24px;
+  padding: 8px 10px;
   background:
     radial-gradient(circle at 78% 0, rgba(255, 186, 46, 0.18), transparent 22rem),
     linear-gradient(135deg, #300045 0%, #4c1669 56%, #642b87 100%);
