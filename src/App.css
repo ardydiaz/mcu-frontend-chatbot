@@ -6204,3 +6204,93 @@ button.avatar-profile:hover {
   object-fit: contain;
 }
 
+
+/* ---------------------------------------------------------------------------
+   Recents list, ChatGPT style: regular-weight system font, compact rows,
+   soft rounded highlight, scrollbar only visible while hovering the list.
+   --------------------------------------------------------------------------- */
+.mcu-kb-shell {
+  --recents-font: ui-sans-serif, -apple-system, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --recents-text: #1f1f1f;
+  --recents-muted: #8f8f8f;
+  --recents-hover: rgba(48, 0, 69, 0.06);
+  --recents-active: rgba(48, 0, 69, 0.1);
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel > p {
+  margin: 10px 0 4px;
+  padding: 0 10px;
+  color: var(--recents-muted);
+  font-family: var(--recents-font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel > small {
+  padding: 0 10px;
+  font-family: var(--recents-font);
+  font-size: 0.8125rem;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-scroll {
+  gap: 1px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-scroll:hover {
+  scrollbar-color: rgba(48, 0, 69, 0.2) transparent;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-item {
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 0;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-item:hover,
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-item.is-menu-open {
+  background: var(--recents-hover);
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-item.active {
+  background: var(--recents-active);
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-scroll button.mcu-kb-recent-title,
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-scroll button.mcu-kb-recent-title:hover {
+  min-height: 36px;
+  border: 0;
+  padding: 8px 10px;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-title strong {
+  color: var(--recents-text);
+  font-family: var(--recents-font);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-scroll button.mcu-kb-recent-menu-button,
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-scroll button.mcu-kb-recent-menu-button:hover {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  gap: 2px;
+  color: #5d5d5d;
+  background: transparent;
+}
+
+.mcu-kb-shell .mcu-kb-recent-panel .mcu-kb-recent-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
