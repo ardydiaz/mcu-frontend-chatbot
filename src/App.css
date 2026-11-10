@@ -630,6 +630,26 @@ h6 {
   gap: 11px;
 }
 
+/* Blinking cursor at the end of an answer while it types out. */
+.bubble.is-typing-answer .message-text > p:last-child::after,
+.bubble.is-typing-answer .message-text > .message-heading:last-child::after,
+.bubble.is-typing-answer .message-text > .message-list:last-child .message-list-item:last-child p::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: text-bottom;
+  background: #5b2185;
+  animation: answer-caret-blink 0.9s steps(1) infinite;
+}
+
+@keyframes answer-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 .message-text p,
 .message-list-item p {
   line-height: 1.55;

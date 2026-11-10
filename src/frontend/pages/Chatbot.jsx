@@ -12,7 +12,7 @@ import {
 } from '../../services/apiClient'
 import apiFetch, { API_BASE_URL } from '../../services/apiClient'
 import MessageBubble from '../components/MessageBubble'
-import { askChatbot } from '../services/chatService'
+import { askChatbotStream } from '../services/chatService'
 import {
   buildRecentConversations,
   buildSmartSuggestions,
@@ -246,6 +246,10 @@ function Chatbot() {
   const [isPlaceholderDeleting, setIsPlaceholderDeleting] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [openRecentMenuId, setOpenRecentMenuId] = useState('')
+  // Id of the assistant reply currently playing the typing animation (not persisted).
+  const [animatingReplyId, setAnimatingReplyId] = useState('')
+  // Id of the assistant reply currently being streamed from the server (not persisted).
+  const [streamingReplyId, setStreamingReplyId] = useState('')
   const typingTimerRef = useRef(null)
   const highlightTimerRef = useRef(null)
   const inactivityTimerRef = useRef(null)
@@ -483,7 +487,11 @@ function Chatbot() {
       }
 
       setIsAuthenticated(nextIsAuthenticated)
-      setCurrentUser(nextUser)
+      // Keep the same object when the stored user hasn't changed. A new object on
+      // every window focus re-triggered the history loader and wiped the open chat.
+      setCurrentUser((previousUser) => (
+        JSON.stringify(previousUser) === JSON.stringify(nextUser) ? previousUser : nextUser
+      ))
     }
 
     window.addEventListener('storage', syncAuthState)
@@ -512,6 +520,21 @@ function Chatbot() {
       })
     })
   }, [activeThread?.messages.length, isTyping])
+
+  // Follow the answer as it types, unless the user has scrolled up to read something else.
+  function keepStreamPinnedToBottom() {
+    const stream = chatStreamRef.current
+
+    if (!stream) {
+      return
+    }
+
+    const distanceFromBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight
+
+    if (distanceFromBottom < 160) {
+      stream.scrollTop = stream.scrollHeight
+    }
+  }
 
   function updateThread(threadId, updater) {
     setChatThreads((currentThreads) =>
@@ -680,33 +703,73 @@ function Chatbot() {
       return
     }
 
+    const threadId = activeThread.id
+    const replyId = `reply-${threadId}-${submittedAt}`
+    let hasStreamedText = false
+
     try {
       const conversationContext = buildConversationContext(activeThread)
-      const data = await askChatbot(
-        trimmedQuestion,
-        siteScope,
-        embedOrigin,
-        embedToken,
-        isEmbedMode,
-        conversationContext,
+      const data = await askChatbotStream(
+        {
+          message: trimmedQuestion,
+          scope: siteScope,
+          embedOrigin,
+          embedToken,
+          isEmbed: isEmbedMode,
+          conversationContext,
+        },
+        {
+          // The AI's answer arrives in pieces: show each piece as soon as it lands.
+          onPartial: (answerBlocks) => {
+            if (!answerBlocks?.length) {
+              return
+            }
+
+            if (!hasStreamedText) {
+              hasStreamedText = true
+              setStreamingReplyId(replyId)
+            }
+
+            upsertReply(threadId, {
+              author: ASSISTANT_NAME,
+              role: 'assistant',
+              text: '',
+              blocks: answerBlocks,
+              time: getCurrentTime(),
+              replyId,
+            })
+            window.requestAnimationFrame(keepStreamPinnedToBottom)
+          },
+        },
       )
-      const assistantReply = buildApiAssistantReply(data)
 
-      updateThread(activeThread.id, (thread) => ({
-        ...thread,
-        messages: [...thread.messages, assistantReply],
-      }))
+      // Answers that were not streamed (e.g. straight from the documents) still type out.
+      if (!hasStreamedText) {
+        setAnimatingReplyId(replyId)
+      }
+
+      upsertReply(threadId, { ...buildApiAssistantReply(data), replyId })
     } catch (error) {
-      const assistantReply = buildErrorReply(error.message)
-
-      updateThread(activeThread.id, (thread) => ({
-        ...thread,
-        messages: [...thread.messages, assistantReply],
-      }))
+      upsertReply(threadId, { ...buildErrorReply(error.message), replyId })
     } finally {
+      setStreamingReplyId('')
       setIsTyping(false)
       submitLockRef.current = false
     }
+  }
+
+  // Adds the reply to the thread, or replaces it if an earlier piece is already shown.
+  function upsertReply(threadId, reply) {
+    updateThread(threadId, (thread) => {
+      const existingIndex = thread.messages.findIndex((messageItem) => messageItem.replyId === reply.replyId)
+
+      return {
+        ...thread,
+        messages: existingIndex === -1
+          ? [...thread.messages, reply]
+          : thread.messages.map((messageItem, index) => (index === existingIndex ? reply : messageItem)),
+      }
+    })
   }
 
   function handleSendMessage(event) {
@@ -1117,10 +1180,17 @@ function Chatbot() {
                 id={`chat-message-${activeThread.id}-${index}`}
                 key={`${messageItem.author}-${messageItem.time}-${index}`}
               >
-                <MessageBubble message={messageItem} currentUser={currentUser} />
+                <MessageBubble
+                  message={messageItem}
+                  currentUser={currentUser}
+                  animate={Boolean(animatingReplyId) && messageItem.replyId === animatingReplyId}
+                  isStreaming={Boolean(streamingReplyId) && messageItem.replyId === streamingReplyId}
+                  onTypingProgress={keepStreamPinnedToBottom}
+                  onTypingDone={() => setAnimatingReplyId('')}
+                />
               </div>
             ))}
-            {isTyping && (
+            {isTyping && !streamingReplyId && (
               <div className="typing-row" aria-live="polite">
                 <div className="avatar" aria-hidden="true"><img src={mcuLogoCircle} alt="" /></div>
                 <div className="bubble typing-bubble">

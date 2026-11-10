@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE_URL } from '../../services/apiClient'
 import mcuLogoCircle from '../../assets/mcu-logo-circle.png'
 
@@ -350,10 +350,232 @@ function parseMessageBlocks(text) {
   return improveReadableBlocks(blocks)
 }
 
-function MessageText({ text }) {
-  const blocks = parseMessageBlocks(text)
+// --- Numbered steps -----------------------------------------------------------
+// The AI sometimes writes steps inline ("1. Do this. 2. Do that.") inside a
+// paragraph. Split those into a proper numbered list so steps always line up.
 
-  return <MessageBlocks blocks={blocks} />
+const LIST_MARKER_PREFIX = /^\s*(?:step\s+)?\d{1,2}[.)]\s+/i
+
+// Finds "1. ", "2. ", "3. " ... in order. Returns null unless at least 2 steps exist.
+function splitInlineNumberedSteps(text) {
+  const value = String(text || '')
+  const positions = []
+  let searchFrom = 0
+
+  for (let number = 1; number <= 30; number += 1) {
+    const pattern = new RegExp(`(^|\\s)${number}[.)]\\s+(?=\\S)`, 'g')
+    pattern.lastIndex = searchFrom
+    const match = pattern.exec(value)
+
+    if (!match) {
+      break
+    }
+
+    const markerStart = match.index + match[1].length
+    positions.push({ markerStart, textStart: match.index + match[0].length })
+    searchFrom = match.index + match[0].length
+  }
+
+  if (positions.length < 2) {
+    return null
+  }
+
+  const items = positions.map((position, index) => {
+    const end = positions[index + 1]?.markerStart ?? value.length
+    return value.slice(position.textStart, end).trim()
+  })
+
+  return {
+    intro: value.slice(0, positions[0].markerStart).trim(),
+    items,
+  }
+}
+
+function normalizeAnswerBlocks(blocks) {
+  return blocks.flatMap((block) => {
+    const isParagraph = block.type === 'p' || block.type === 'paragraph'
+
+    if (isParagraph) {
+      const steps = splitInlineNumberedSteps(block.text)
+
+      if (!steps) {
+        return [block]
+      }
+
+      const listBlock = {
+        type: 'ol',
+        items: steps.items.map((value, index) => ({ marker: String(index + 1), value })),
+      }
+
+      return steps.intro ? [{ ...block, text: steps.intro }, listBlock] : [listBlock]
+    }
+
+    if (block.type === 'list' || block.type === 'ol') {
+      // Items like "1. Get a queue number" would otherwise show the number twice.
+      return [{
+        ...block,
+        items: block.items.map((item, index) => {
+          const value = String(typeof item === 'string' ? item : item?.value || '').replace(LIST_MARKER_PREFIX, '')
+          return typeof item === 'string'
+            ? { marker: String(index + 1), value }
+            : { ...item, value }
+        }),
+      }]
+    }
+
+    return [block]
+  })
+}
+
+// --- Typing animation -------------------------------------------------------
+// Answers arrive complete from the API; these helpers reveal them word by word
+// while keeping the parsed block structure (headings, lists, stats) intact.
+
+const TYPING_TICK_MS = 30
+const TYPING_MAX_DURATION_MS = 4000
+
+function countWords(text) {
+  return String(text || '').split(/\s+/).filter(Boolean).length
+}
+
+function takeWords(text, wordCount) {
+  const words = String(text || '').split(/(\s+)/)
+  let taken = 0
+  let result = ''
+
+  for (const part of words) {
+    if (/^\s+$/.test(part)) {
+      result += part
+      continue
+    }
+
+    if (!part) {
+      continue
+    }
+
+    if (taken >= wordCount) {
+      break
+    }
+
+    result += part
+    taken += 1
+  }
+
+  return result.trimEnd()
+}
+
+function getListItemText(item) {
+  return typeof item === 'string' ? item : item?.value
+}
+
+function countBlockWords(blocks) {
+  return blocks.reduce((total, block) => {
+    if (block.type === 'ol' || block.type === 'ul' || block.type === 'list') {
+      return total + block.items.reduce((sum, item) => sum + Math.max(1, countWords(getListItemText(item))), 0)
+    }
+
+    if (block.type === 'statGrid') {
+      return total + block.items.length
+    }
+
+    return total + Math.max(1, countWords(block.text))
+  }, 0)
+}
+
+// Returns the blocks cut off after `budget` words, so the answer appears to type out.
+function truncateBlocks(blocks, budget) {
+  const visibleBlocks = []
+  let remaining = budget
+
+  for (const block of blocks) {
+    if (remaining <= 0) {
+      break
+    }
+
+    if (block.type === 'ol' || block.type === 'ul' || block.type === 'list') {
+      const items = []
+
+      for (const [itemIndex, item] of block.items.entries()) {
+        if (remaining <= 0) {
+          break
+        }
+
+        const text = getListItemText(item)
+        const words = Math.max(1, countWords(text))
+        const visibleText = words <= remaining ? text : takeWords(text, remaining)
+        remaining -= Math.min(words, remaining)
+        items.push(typeof item === 'string'
+          ? { marker: itemIndex + 1, value: visibleText }
+          : { ...item, value: visibleText })
+      }
+
+      visibleBlocks.push({ ...block, items })
+      continue
+    }
+
+    if (block.type === 'statGrid') {
+      const items = block.items.slice(0, remaining)
+      remaining -= items.length
+      visibleBlocks.push({ ...block, items })
+      continue
+    }
+
+    const words = Math.max(1, countWords(block.text))
+
+    if (words <= remaining) {
+      visibleBlocks.push(block)
+      remaining -= words
+      continue
+    }
+
+    visibleBlocks.push({ ...block, text: takeWords(block.text, remaining), fullText: undefined, isTruncated: false })
+    remaining = 0
+  }
+
+  return visibleBlocks
+}
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+function useTypewriter(totalWords, isEnabled, { onProgress, onDone } = {}) {
+  const shouldAnimate = isEnabled && totalWords > 0 && !prefersReducedMotion()
+  const [revealedWords, setRevealedWords] = useState(() => (shouldAnimate ? 0 : totalWords))
+  const callbacksRef = useRef({ onProgress, onDone })
+
+  useEffect(() => {
+    callbacksRef.current = { onProgress, onDone }
+  })
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      return undefined
+    }
+
+    // Short answers type at a natural pace; long ones speed up so they finish in a few seconds.
+    const maxTicks = TYPING_MAX_DURATION_MS / TYPING_TICK_MS
+    const wordsPerTick = Math.max(1, Math.ceil(totalWords / maxTicks))
+    let current = 0
+
+    const intervalId = window.setInterval(() => {
+      current = Math.min(totalWords, current + wordsPerTick)
+      setRevealedWords(current)
+      callbacksRef.current.onProgress?.()
+
+      if (current >= totalWords) {
+        window.clearInterval(intervalId)
+        callbacksRef.current.onDone?.()
+      }
+    }, TYPING_TICK_MS)
+
+    return () => window.clearInterval(intervalId)
+  }, [shouldAnimate, totalWords])
+
+  const isTyping = shouldAnimate && revealedWords < totalWords
+
+  return { revealedWords: shouldAnimate ? revealedWords : totalWords, isTyping }
 }
 
 function MessageBlocks({ blocks }) {
@@ -422,11 +644,21 @@ function MessageBlocks({ blocks }) {
   )
 }
 
-function MessageBubble({ message, currentUser }) {
+function MessageBubble({ message, currentUser, animate = false, isStreaming = false, onTypingProgress, onTypingDone }) {
   const [activeImage, setActiveImage] = useState(null)
-  const images = message.images || []
-  const shouldShowImages = message.showImages && images.length > 0
   const isAssistant = message.role === 'assistant'
+  const blocks = useMemo(
+    () => normalizeAnswerBlocks(message.blocks?.length ? message.blocks : parseMessageBlocks(message.text)),
+    [message.blocks, message.text],
+  )
+  const totalWords = useMemo(() => countBlockWords(blocks), [blocks])
+  const { revealedWords, isTyping } = useTypewriter(totalWords, animate && isAssistant, {
+    onProgress: onTypingProgress,
+    onDone: onTypingDone,
+  })
+  const visibleBlocks = isTyping ? truncateBlocks(blocks, revealedWords) : blocks
+  const images = message.images || []
+  const shouldShowImages = message.showImages && images.length > 0 && !isTyping
   const userPhotoUrl = !isAssistant ? currentUser?.photoUrl : ''
   const userInitials = getInitials(currentUser?.name, currentUser?.email)
   const displayAuthor = !isAssistant && message.author === 'Student'
@@ -442,12 +674,12 @@ function MessageBubble({ message, currentUser }) {
         )}
         {!isAssistant && !userPhotoUrl && userInitials}
       </div>
-      <div className="bubble">
+      <div className={`bubble${isTyping || isStreaming ? ' is-typing-answer' : ''}`} aria-busy={isTyping || isStreaming || undefined}>
         <div className="message-meta">
           <strong>{displayAuthor}</strong>
           <span>{message.time}</span>
         </div>
-        {message.blocks?.length ? <MessageBlocks blocks={message.blocks} /> : <MessageText text={message.text} />}
+        <MessageBlocks blocks={visibleBlocks} />
         {shouldShowImages && (
           <div className="message-screenshots">
             <div className="message-screenshots-head">
