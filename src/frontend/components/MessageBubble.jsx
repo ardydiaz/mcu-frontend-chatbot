@@ -393,6 +393,11 @@ function splitInlineNumberedSteps(text) {
 
 function normalizeAnswerBlocks(blocks) {
   return blocks.flatMap((block) => {
+    // Older saved answers carry a "general answer" disclaimer that is no longer shown.
+    if (block.variant === 'note') {
+      return []
+    }
+
     const isParagraph = block.type === 'p' || block.type === 'paragraph'
 
     if (isParagraph) {
@@ -621,6 +626,14 @@ function MessageBlocks({ blocks }) {
 
         if (block.type === 'heading') {
           return <strong className="message-heading" key={`heading-${index}`}>{block.text}</strong>
+        }
+
+        if (block.type === 'code') {
+          return (
+            <pre className="message-code" key={`code-${index}`}>
+              <code>{block.text}</code>
+            </pre>
+          )
         }
 
         if (block.type === 'preformatted') {

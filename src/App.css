@@ -677,6 +677,25 @@ h6 {
   font-weight: 520;
 }
 
+/* Code examples in answers (dark block like ChatGPT, scrolls sideways if long). */
+.message-code {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-radius: 10px;
+  color: #f4f1f8;
+  background: #1f1b24;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.message-code code {
+  font-family: inherit;
+}
+
 .message-preformatted {
   display: grid;
   gap: 10px;
