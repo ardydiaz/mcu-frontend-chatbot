@@ -561,8 +561,12 @@ function Chatbot() {
   }
 
   function buildApiAssistantReply(data) {
+    // Website pages (imported from mcu.edu.ph) are shown as links, not file previews.
+    const websiteLinks = [...new Map((data.sources || [])
+      .filter((source) => source.sourceUrl)
+      .map((source) => [source.sourceUrl, { title: source.title, url: source.sourceUrl }])).values()]
     const sourcePreviewImages = (data.sources || [])
-      .filter((source) => source.documentId || source.previewFileUrl)
+      .filter((source) => !source.sourceUrl && (source.documentId || source.previewFileUrl))
       .map((source) => ({
         documentId: source.documentId,
         title: source.title,
@@ -588,6 +592,7 @@ function Chatbot() {
       blocks: data.answerBlocks,
       images: previewImages,
       showImages: previewImages.length > 0,
+      links: websiteLinks,
       time: getCurrentTime(),
       source: extraSourceCount > 0 ? `${sourceText}; +${extraSourceCount} more` : sourceText,
     }

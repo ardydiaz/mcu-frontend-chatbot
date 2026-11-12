@@ -696,6 +696,48 @@ h6 {
   font-family: inherit;
 }
 
+/* Links to the mcu.edu.ph pages an answer came from. */
+.message-website-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.message-website-sources > span {
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.message-website-sources a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  border: 1px solid rgba(100, 43, 135, 0.18);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: #300045;
+  background: #faf7fc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.message-website-sources a:hover {
+  border-color: rgba(100, 43, 135, 0.42);
+  background: #f3ecf8;
+}
+
+.message-website-sources small {
+  color: #8a7a96;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
 .message-preformatted {
   display: grid;
   gap: 10px;
@@ -6120,7 +6162,7 @@ button.avatar-profile:hover {
 }
 
 .mcu-kb-shell:not(.is-embed) .mcu-kb-stream > div {
-  width: min(860px, 100%);
+  width: min(1200px, 100%);
 }
 
 .mcu-kb-shell:not(.is-embed) .message.user {

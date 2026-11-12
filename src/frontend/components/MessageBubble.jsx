@@ -672,6 +672,7 @@ function MessageBubble({ message, currentUser, animate = false, isStreaming = fa
   const visibleBlocks = isTyping ? truncateBlocks(blocks, revealedWords) : blocks
   const images = message.images || []
   const shouldShowImages = message.showImages && images.length > 0 && !isTyping
+  const websiteLinks = !isTyping && !isStreaming ? message.links || [] : []
   const userPhotoUrl = !isAssistant ? currentUser?.photoUrl : ''
   const userInitials = getInitials(currentUser?.name, currentUser?.email)
   const displayAuthor = !isAssistant && message.author === 'Student'
@@ -693,6 +694,17 @@ function MessageBubble({ message, currentUser, animate = false, isStreaming = fa
           <span>{message.time}</span>
         </div>
         <MessageBlocks blocks={visibleBlocks} />
+        {websiteLinks.length > 0 && (
+          <div className="message-website-sources">
+            <span>Source</span>
+            {websiteLinks.slice(0, 3).map((link) => (
+              <a key={link.url} href={link.url} target="_blank" rel="noreferrer">
+                {link.title}
+                <small>mcu.edu.ph</small>
+              </a>
+            ))}
+          </div>
+        )}
         {shouldShowImages && (
           <div className="message-screenshots">
             <div className="message-screenshots-head">
